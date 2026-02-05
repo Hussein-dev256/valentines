@@ -5,6 +5,7 @@ import {
   ReceiverPage,
   ResultsPage,
   MyValentinesPage,
+  AdminDashboard,
   NotFoundPage,
 } from './pages';
 
@@ -17,6 +18,7 @@ function App() {
         <Route path="/v/:id" element={<ReceiverPage />} />
         <Route path="/r/:token" element={<ResultsPage />} />
         <Route path="/my-valentines" element={<MyValentinesPage />} />
+        <Route path="/admin" element={<AdminDashboard />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </BrowserRouter>

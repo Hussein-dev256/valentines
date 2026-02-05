@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { getResult } from '../services/valentine.service';
 import { trackEvent, EventTypes } from '../services/analytics.service';
 import { Footer } from '../components';
+import { celebrateYes } from '../utils/confetti';
 import type { GetResultResponse } from '../types/database.types';
 
 export default function ResultsPage() {
@@ -77,7 +78,13 @@ export default function ResultsPage() {
             
             <div className="space-y-4">
               <button
-                onClick={() => setShowWarning(false)}
+                onClick={() => {
+                  setShowWarning(false);
+                  // Trigger confetti if result is YES
+                  if (result?.status === 'yes') {
+                    setTimeout(() => celebrateYes(), 500);
+                  }
+                }}
                 className="w-full bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 px-8 rounded-full transition-colors duration-200"
               >
                 Yes… tell me 😭

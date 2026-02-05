@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { getValentine, submitAnswer } from '../services/valentine.service';
 import { trackEvent, EventTypes } from '../services/analytics.service';
 import { DodgingButton, Footer } from '../components';
+import { celebrateYes } from '../utils/confetti';
 import type { GetValentineResponse } from '../types/database.types';
 
 export default function ReceiverPage() {
@@ -81,6 +82,11 @@ export default function ReceiverPage() {
       await submitAnswer(id, selectedAnswer);
       setAnswer(selectedAnswer);
       setHasAnswered(true);
+      
+      // Celebrate with confetti if YES! 🎉
+      if (selectedAnswer === 'yes') {
+        celebrateYes();
+      }
       
       // Track event
       trackEvent(
