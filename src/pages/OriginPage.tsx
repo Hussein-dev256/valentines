@@ -1,12 +1,18 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { trackEvent, EventTypes } from '../services/analytics.service';
+import { getStoredTokens } from '../utils/resultTokenStorage';
 
 export default function OriginPage() {
   const navigate = useNavigate();
+  const [hasSentValentines, setHasSentValentines] = useState(false);
 
   useEffect(() => {
     trackEvent(EventTypes.ORIGIN_VIEW);
+    
+    // Check if user has sent any Valentines
+    const tokens = getStoredTokens();
+    setHasSentValentines(tokens.length > 0);
   }, []);
 
   return (
@@ -28,6 +34,17 @@ export default function OriginPage() {
           >
             Ask him / her out 💘
           </button>
+          
+          {hasSentValentines && (
+            <div className="mt-6">
+              <button
+                onClick={() => navigate('/my-valentines')}
+                className="text-pink-600 hover:text-pink-700 underline text-sm"
+              >
+                View my sent Valentines
+              </button>
+            </div>
+          )}
         </div>
       </main>
       

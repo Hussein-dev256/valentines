@@ -28,6 +28,13 @@ export default function ReceiverPage() {
       try {
         const data = await getValentine(id);
         setValentine(data);
+        
+        // Check if already answered
+        if (data.status !== 'pending') {
+          setHasAnswered(true);
+          setAnswer(data.status === 'yes' ? 'yes' : 'no');
+        }
+        
         trackEvent(EventTypes.RECEIVER_OPENED, id);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load Valentine');

@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createValentine } from '../services/valentine.service';
+import { storeResultToken } from '../utils/resultTokenStorage';
 
 export default function CreateValentinePage() {
   const navigate = useNavigate();
@@ -53,6 +54,10 @@ export default function CreateValentinePage() {
 
       // Store result token and show prompt
       const token = result.result_url.split('/r/')[1];
+      
+      // Store token in localStorage for consistent access
+      storeResultToken(token, result.valentine_id, trimmedReceiverName);
+      
       setResultToken(token);
       setShowPrompt(true);
     } catch (err) {
