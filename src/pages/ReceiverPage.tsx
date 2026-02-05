@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { getValentine, submitAnswer } from '../services/valentine.service';
 import { trackEvent, EventTypes } from '../services/analytics.service';
 import { DodgingButton } from '../components';
-import { getResultTokenByValentineId } from '../utils/resultTokenStorage';
 import type { GetValentineResponse } from '../types/database.types';
 
 export default function ReceiverPage() {
@@ -26,16 +25,8 @@ export default function ReceiverPage() {
         return;
       }
 
-      // Check if user is the sender of THIS SPECIFIC Valentine
-      // Only redirect if they created THIS Valentine (not just any Valentine)
-      const resultToken = getResultTokenByValentineId(id);
-      if (resultToken) {
-        // User is the sender of THIS Valentine - redirect to results
-        navigate(`/r/${resultToken}`, { replace: true });
-        return;
-      }
-
-      // User is NOT the sender - show receiver experience
+      // RECEIVER PAGE: Always show the question page
+      // Senders should use the /r/{token} link to see results, not /v/{id}
       try {
         const data = await getValentine(id);
         setValentine(data);
