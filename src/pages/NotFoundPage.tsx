@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { Footer } from '../components';
 
 export default function NotFoundPage() {
   const navigate = useNavigate();
@@ -34,9 +35,7 @@ export default function NotFoundPage() {
         </div>
       </main>
       
-      <footer className="py-6 text-center text-gray-600 text-sm">
-        <p>Made with ❤️ by a digital wingman</p>
-      </footer>
+      <Footer />
     </div>
   );
 }

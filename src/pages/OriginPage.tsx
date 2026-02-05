@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Footer } from '../components';
 import { trackEvent, EventTypes } from '../services/analytics.service';
 import { getStoredTokens } from '../utils/resultTokenStorage';
 
@@ -48,9 +49,7 @@ export default function OriginPage() {
         </div>
       </main>
       
-      <footer className="py-6 text-center text-gray-600 text-sm">
-        <p>Made with ❤️ by a digital wingman</p>
-      </footer>
+      <Footer />
     </div>
   );
 }

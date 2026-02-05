@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getResult } from '../services/valentine.service';
 import { trackEvent, EventTypes } from '../services/analytics.service';
+import { Footer } from '../components';
 import type { GetResultResponse } from '../types/database.types';
 
 export default function ResultsPage() {
@@ -91,9 +92,7 @@ export default function ResultsPage() {
           </div>
         </main>
         
-        <footer className="py-6 text-center text-gray-600 text-sm">
-          <p>Made with ❤️ by a digital wingman</p>
-        </footer>
+        <Footer />
       </div>
     );
   }
@@ -164,9 +163,7 @@ export default function ResultsPage() {
         </div>
       </main>
       
-      <footer className="py-6 text-center text-gray-600 text-sm">
-        <p>Made with ❤️ by a digital wingman</p>
-      </footer>
+      <Footer />
     </div>
   );
 }

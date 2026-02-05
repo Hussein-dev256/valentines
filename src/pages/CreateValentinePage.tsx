@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createValentine } from '../services/valentine.service';
 import { storeResultToken } from '../utils/resultTokenStorage';
+import { Footer } from '../components';
 
 export default function CreateValentinePage() {
   const navigate = useNavigate();
@@ -97,9 +98,7 @@ export default function CreateValentinePage() {
           </div>
         </main>
         
-        <footer className="py-6 text-center text-gray-600 text-sm">
-          <p>Made with ❤️ by a digital wingman</p>
-        </footer>
+        <Footer />
       </div>
     );
   }
@@ -163,9 +162,7 @@ export default function CreateValentinePage() {
         </div>
       </main>
       
-      <footer className="py-6 text-center text-gray-600 text-sm">
-        <p>Made with ❤️ by a digital wingman</p>
-      </footer>
+      <Footer />
     </div>
   );
 }

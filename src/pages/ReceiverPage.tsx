@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getValentine, submitAnswer } from '../services/valentine.service';
 import { trackEvent, EventTypes } from '../services/analytics.service';
-import { DodgingButton } from '../components';
+import { DodgingButton, Footer } from '../components';
 import type { GetValentineResponse } from '../types/database.types';
 
 export default function ReceiverPage() {
@@ -142,9 +142,7 @@ export default function ReceiverPage() {
           </div>
         </main>
         
-        <footer className="py-6 text-center text-gray-600 text-sm">
-          <p>Made with ❤️ by a digital wingman</p>
-        </footer>
+        <Footer />
       </div>
     );
   }
@@ -214,9 +212,7 @@ export default function ReceiverPage() {
         </div>
       </main>
       
-      <footer className="py-6 text-center text-gray-600 text-sm">
-        <p>Made with ❤️ by a digital wingman</p>
-      </footer>
+      <Footer />
     </div>
   );
 }

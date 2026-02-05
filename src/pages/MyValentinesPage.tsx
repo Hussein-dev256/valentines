@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getStoredTokens } from '../utils/resultTokenStorage';
+import { Footer } from '../components';
 
 export default function MyValentinesPage() {
   const navigate = useNavigate();
@@ -35,9 +36,7 @@ export default function MyValentinesPage() {
           </div>
         </main>
         
-        <footer className="py-6 text-center text-gray-600 text-sm">
-          <p>Made with ❤️ by a digital wingman</p>
-        </footer>
+        <Footer />
       </div>
     );
   }
@@ -96,9 +95,7 @@ export default function MyValentinesPage() {
         </div>
       </main>
       
-      <footer className="py-6 text-center text-gray-600 text-sm">
-        <p>Made with ❤️ by a digital wingman</p>
-      </footer>
+      <Footer />
     </div>
   );
 }
