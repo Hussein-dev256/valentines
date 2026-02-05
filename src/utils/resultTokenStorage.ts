@@ -62,6 +62,13 @@ export function getResultTokenByValentineId(valentineId: string): string | null 
 }
 
 /**
+ * Check if user is the sender of a Valentine (by valentine ID)
+ */
+export function isSender(valentineId: string): boolean {
+  return getResultTokenByValentineId(valentineId) !== null;
+}
+
+/**
  * Check if user has access to a result token
  */
 export function hasAccessToResult(token: string): boolean {

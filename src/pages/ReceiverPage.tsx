@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { getValentine, submitAnswer } from '../services/valentine.service';
 import { trackEvent, EventTypes } from '../services/analytics.service';
 import { DodgingButton } from '../components';
+import { getResultTokenByValentineId } from '../utils/resultTokenStorage';
 import type { GetValentineResponse } from '../types/database.types';
 
 export default function ReceiverPage() {
@@ -25,6 +26,13 @@ export default function ReceiverPage() {
         return;
       }
 
+      // Check if user is the sender - redirect to results page
+      const resultToken = getResultTokenByValentineId(id);
+      if (resultToken) {
+        navigate(`/r/${resultToken}`, { replace: true });
+        return;
+      }
+
       try {
         const data = await getValentine(id);
         setValentine(data);
@@ -44,7 +52,7 @@ export default function ReceiverPage() {
     };
 
     fetchValentine();
-  }, [id]);
+  }, [id, navigate]);
 
   if (loading) {
     return (
