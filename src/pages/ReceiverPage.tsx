@@ -95,10 +95,10 @@ export default function ReceiverPage() {
             {answer === 'yes' ? (
               <>
                 <h1 className="text-4xl font-bold text-green-600 mb-6">
-                  🎉 Yay! 🎉
+                  AYYYYY 😍💃🕺
                 </h1>
                 <p className="text-gray-700 mb-8 text-lg">
-                  They're going to be so happy! Time to plan that perfect Valentine's date! 💕
+                  You just made someone very happy 💖
                 </p>
               </>
             ) : (
@@ -116,7 +116,7 @@ export default function ReceiverPage() {
               onClick={() => navigate('/create')}
               className="bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 px-8 rounded-full transition-colors duration-200"
             >
-              Create Your Own Valentine
+              Ask another person out 💌
             </button>
           </div>
         </main>
@@ -145,19 +145,20 @@ export default function ReceiverPage() {
             </div>
           )}
           
-          <div className="space-y-4">
+          <div className="flex flex-col items-center gap-4">
             <button
               onClick={handleYesClick}
               disabled={isSubmitting}
-              className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-full transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-64 bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-8 rounded-full transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-lg"
             >
-              {isSubmitting ? 'Submitting...' : 'YES! 💚'}
+              {isSubmitting ? 'Submitting...' : 'YES 😍'}
             </button>
+            
             <DodgingButton
               onClick={handleNoClick}
-              className="w-full bg-gray-300 hover:bg-gray-400 text-gray-700 font-bold py-3 px-6 rounded-full"
+              className="w-64 bg-gray-300 hover:bg-gray-400 text-gray-700 font-bold py-4 px-8 rounded-full text-lg"
             >
-              NO
+              NO 🙃
             </DodgingButton>
           </div>
         </div>

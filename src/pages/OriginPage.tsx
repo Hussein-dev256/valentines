@@ -14,19 +14,19 @@ export default function OriginPage() {
       <main className="flex-1 flex items-center justify-center px-4">
         <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full text-center">
           <h1 className="text-4xl font-bold text-pink-600 mb-4">
-            Will You Be My Valentine? 💕
+            💘 Will You Be My Valentine?
           </h1>
-          <p className="text-gray-700 mb-6 text-lg">
-            The playful way to ask someone out for Valentine's Day.
+          <p className="text-gray-700 mb-4 text-xl italic">
+            Eyeing someone for Valentine's? 😏
           </p>
-          <p className="text-gray-600 mb-8">
-            Create a personalized Valentine, share it with your crush, and see if they say yes!
+          <p className="text-gray-600 mb-8 text-lg">
+            Ask them out.
           </p>
           <button
             onClick={() => navigate('/create')}
-            className="bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 px-8 rounded-full transition-colors duration-200 text-lg"
+            className="bg-pink-500 hover:bg-pink-600 text-white font-bold py-4 px-8 rounded-full transition-colors duration-200 text-lg"
           >
-            Create Your Valentine
+            Ask him / her out 💘
           </button>
         </div>
       </main>

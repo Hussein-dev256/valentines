@@ -68,18 +68,26 @@ export default function ResultsPage() {
         <main className="flex-1 flex items-center justify-center px-4">
           <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full text-center">
             <h1 className="text-3xl font-bold text-pink-600 mb-6">
-              The Moment of Truth 🎭
+              WAIT ✋😬
             </h1>
-            <p className="text-gray-700 mb-8">
-              Are you ready to see if they said yes?
+            <p className="text-gray-700 mb-8 text-lg">
+              Are you REALLY sure you wanna know?? 😭😂
             </p>
             
-            <button
-              onClick={() => setShowWarning(false)}
-              className="bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 px-8 rounded-full transition-colors duration-200"
-            >
-              Show Me The Result
-            </button>
+            <div className="space-y-4">
+              <button
+                onClick={() => setShowWarning(false)}
+                className="w-full bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 px-8 rounded-full transition-colors duration-200"
+              >
+                Yes… tell me 😭
+              </button>
+              <button
+                onClick={() => navigate('/')}
+                className="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-3 px-8 rounded-full transition-colors duration-200"
+              >
+                No no no 😅
+              </button>
+            </div>
           </div>
         </main>
         
@@ -112,24 +120,37 @@ export default function ResultsPage() {
           {result.status === 'yes' && (
             <>
               <h1 className="text-4xl font-bold text-green-600 mb-6">
-                They Said YES! 🎉💚
+                GOOD NEWS 🎉💖
               </h1>
-              <p className="text-gray-700 mb-8 text-lg">
-                Congratulations! Time to plan that perfect Valentine's date! 💕
+              <h2 className="text-3xl font-bold text-green-600 mb-6">
+                THEY SAID YESSS 😍😍
+              </h2>
+              <p className="text-gray-700 mb-8 text-lg italic">
+                Go and behave yourself now 😌
               </p>
             </>
           )}
 
           {result.status === 'no' && (
             <>
-              <h1 className="text-3xl font-bold text-gray-700 mb-6">
-                Not This Time 💙
+              <h1 className="text-3xl font-bold text-gray-700 mb-4">
+                Hmm… 😬😬
               </h1>
-              <p className="text-gray-700 mb-8 text-lg">
-                Hey, you took your shot and that takes courage! There are plenty of other fish in the sea 🐠
+              <p className="text-gray-600 mb-6 text-lg italic">
+                This one hurts small sha…
               </p>
-              <p className="text-gray-600 mb-8">
-                Keep your head up - the right person is out there!
+              <h2 className="text-3xl font-bold text-red-600 mb-6">
+                They said NO 😭💔
+              </h2>
+              <div className="my-8 border-t-2 border-gray-200"></div>
+              <h3 className="text-2xl font-bold text-gray-800 mb-4">
+                BUT HEY 😌
+              </h3>
+              <p className="text-gray-700 mb-4 text-lg">
+                Valentine plenty outside 😏
+              </p>
+              <p className="text-gray-700 mb-8 text-lg">
+                Go try again.
               </p>
             </>
           )}
@@ -138,7 +159,7 @@ export default function ResultsPage() {
             onClick={() => navigate('/create')}
             className="bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 px-8 rounded-full transition-colors duration-200"
           >
-            Create Another Valentine
+            Ask another person out 💘
           </button>
         </div>
       </main>

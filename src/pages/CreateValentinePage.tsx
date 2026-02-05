@@ -87,7 +87,7 @@ export default function CreateValentinePage() {
             
             <div>
               <label htmlFor="senderName" className="block text-gray-700 font-semibold mb-2">
-                Your name (optional)
+                Your name (optional but encouraged)
               </label>
               <input
                 type="text"
@@ -112,7 +112,7 @@ export default function CreateValentinePage() {
               disabled={isSubmitting}
               className="w-full bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 px-6 rounded-full transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isSubmitting ? 'Creating...' : 'Create Valentine'}
+              {isSubmitting ? 'Creating...' : 'Ask them out 😈💌'}
             </button>
           </form>
         </div>
