@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getValentine, submitAnswer } from '../services/valentine.service';
 import { trackEvent, EventTypes } from '../services/analytics.service';
@@ -14,6 +14,8 @@ export default function ReceiverPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasAnswered, setHasAnswered] = useState(false);
   const [answer, setAnswer] = useState<'yes' | 'no' | null>(null);
+  const [buttonsSwapped, setButtonsSwapped] = useState(false);
+  const yesButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const fetchValentine = async () => {
@@ -86,6 +88,11 @@ export default function ReceiverPage() {
   const handleYesClick = () => handleAnswer('yes');
   const handleNoClick = () => handleAnswer('no');
 
+  const handleSwapRequest = () => {
+    setButtonsSwapped(prev => !prev);
+    setTimeout(() => setButtonsSwapped(false), 1000);
+  };
+
   // Show feedback screen after answering
   if (hasAnswered && answer) {
     return (
@@ -100,24 +107,29 @@ export default function ReceiverPage() {
                 <p className="text-gray-700 mb-8 text-lg">
                   You just made someone very happy 💖
                 </p>
+                <button
+                  onClick={() => navigate('/create')}
+                  className="bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 px-8 rounded-full transition-colors duration-200"
+                >
+                  Ask another person out 💌, I won't spill I promise 😉
+                </button>
               </>
             ) : (
               <>
                 <h1 className="text-3xl font-bold text-gray-700 mb-6">
-                  All good! 👍
+                  Ouuchh, noted 😌
                 </h1>
                 <p className="text-gray-700 mb-8 text-lg">
-                  No worries! There are plenty of fish in the sea. Maybe you'll find your Valentine another way! 🐠
+                  Not your type? Ask out your type...
                 </p>
+                <button
+                  onClick={() => navigate('/create')}
+                  className="bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 px-8 rounded-full transition-colors duration-200"
+                >
+                  Ask another person out 💌
+                </button>
               </>
             )}
-            
-            <button
-              onClick={() => navigate('/create')}
-              className="bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 px-8 rounded-full transition-colors duration-200"
-            >
-              Ask another person out 💌
-            </button>
           </div>
         </main>
         
@@ -146,21 +158,49 @@ export default function ReceiverPage() {
           )}
           
           <div className="flex flex-col items-center gap-4">
-            <button
-              onClick={handleYesClick}
-              disabled={isSubmitting}
-              className="w-64 bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-8 rounded-full transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-lg"
-            >
-              {isSubmitting ? 'Submitting...' : 'YES 😍'}
-            </button>
-            
-            <DodgingButton
-              onClick={handleNoClick}
-              dodgeDuration={Math.floor(Math.random() * 11) + 15} // Random 15-25 seconds
-              className="w-64 bg-gray-300 hover:bg-gray-400 text-gray-700 font-bold py-4 px-8 rounded-full text-lg"
-            >
-              NO 🙃
-            </DodgingButton>
+            {!buttonsSwapped ? (
+              <>
+                <button
+                  ref={yesButtonRef}
+                  onClick={handleYesClick}
+                  disabled={isSubmitting}
+                  className="w-64 bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-8 rounded-full transition-all duration-400 disabled:opacity-50 disabled:cursor-not-allowed text-lg"
+                >
+                  {isSubmitting ? 'Submitting...' : 'YES 😍'}
+                </button>
+                
+                <DodgingButton
+                  onClick={handleNoClick}
+                  dodgeDuration={Math.floor(Math.random() * 11) + 15} // Random 15-25 seconds
+                  yesButtonRef={yesButtonRef}
+                  onSwapRequest={handleSwapRequest}
+                  className="w-64 bg-gray-300 hover:bg-gray-400 text-gray-700 font-bold py-4 px-8 rounded-full text-lg"
+                >
+                  NO 🙃
+                </DodgingButton>
+              </>
+            ) : (
+              <>
+                <DodgingButton
+                  onClick={handleNoClick}
+                  dodgeDuration={Math.floor(Math.random() * 11) + 15} // Random 15-25 seconds
+                  yesButtonRef={yesButtonRef}
+                  onSwapRequest={handleSwapRequest}
+                  className="w-64 bg-gray-300 hover:bg-gray-400 text-gray-700 font-bold py-4 px-8 rounded-full text-lg"
+                >
+                  NO 🙃
+                </DodgingButton>
+                
+                <button
+                  ref={yesButtonRef}
+                  onClick={handleYesClick}
+                  disabled={isSubmitting}
+                  className="w-64 bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-8 rounded-full transition-all duration-400 disabled:opacity-50 disabled:cursor-not-allowed text-lg"
+                >
+                  {isSubmitting ? 'Submitting...' : 'YES 😍'}
+                </button>
+              </>
+            )}
           </div>
         </div>
       </main>
