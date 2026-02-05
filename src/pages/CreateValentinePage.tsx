@@ -8,6 +8,8 @@ export default function CreateValentinePage() {
   const [senderName, setSenderName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showPrompt, setShowPrompt] = useState(false);
+  const [resultToken, setResultToken] = useState<string | null>(null);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -49,15 +51,53 @@ export default function CreateValentinePage() {
         alert('Link copied to clipboard! Share it with your Valentine 💕');
       }
 
-      // Navigate to result page
-      const resultToken = result.result_url.split('/r/')[1];
-      navigate(`/r/${resultToken}`);
+      // Store result token and show prompt
+      const token = result.result_url.split('/r/')[1];
+      setResultToken(token);
+      setShowPrompt(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create Valentine. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  // Show prompt after Valentine is created
+  if (showPrompt && resultToken) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-pink-100 to-red-100 flex flex-col">
+        <main className="flex-1 flex items-center justify-center px-4">
+          <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full text-center">
+            <h1 className="text-3xl font-bold text-pink-600 mb-6">
+              Valentine Sent! 💌
+            </h1>
+            <p className="text-gray-700 mb-8 text-lg">
+              Your Valentine has been sent! Do you want to see if they've answered?
+            </p>
+            
+            <div className="space-y-4">
+              <button
+                onClick={() => navigate(`/r/${resultToken}`)}
+                className="w-full bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 px-8 rounded-full transition-colors duration-200"
+              >
+                Yes, show me! 👀
+              </button>
+              <button
+                onClick={() => navigate('/')}
+                className="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-3 px-8 rounded-full transition-colors duration-200"
+              >
+                Maybe later 😌
+              </button>
+            </div>
+          </div>
+        </main>
+        
+        <footer className="py-6 text-center text-gray-600 text-sm">
+          <p>Made with ❤️ by a digital wingman</p>
+        </footer>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-100 to-red-100 flex flex-col">

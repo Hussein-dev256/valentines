@@ -15,7 +15,7 @@ describe('DodgingButton', () => {
     const mockOnClick = vi.fn();
     
     render(
-      <DodgingButton onClick={mockOnClick} maxDodgeAttempts={0}>
+      <DodgingButton onClick={mockOnClick} dodgeDuration={0}>
         Click Me
       </DodgingButton>
     );
@@ -54,19 +54,19 @@ describe('DodgingButton', () => {
     expect(rect.top).toBeGreaterThanOrEqual(0);
   });
 
-  it('button becomes clickable after max dodge attempts', async () => {
+  it('button becomes clickable after dodge duration', async () => {
     const user = userEvent.setup();
     const mockOnClick = vi.fn();
     
     render(
-      <DodgingButton onClick={mockOnClick} maxDodgeAttempts={1}>
+      <DodgingButton onClick={mockOnClick} dodgeDuration={0.1}>
         Click Me
       </DodgingButton>
     );
     
     const button = screen.getByRole('button', { name: /Click Me/i });
     
-    // After max attempts, button should be clickable
+    // After duration, button should be clickable
     await user.click(button);
     
     // Should eventually call onClick

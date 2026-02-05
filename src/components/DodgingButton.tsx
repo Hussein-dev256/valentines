@@ -5,22 +5,25 @@ interface DodgingButtonProps {
   children: React.ReactNode;
   className?: string;
   dodgeRadius?: number;
-  maxDodgeAttempts?: number;
+  dodgeDuration?: number; // Duration in seconds (25-45 seconds)
 }
 
 export default function DodgingButton({
   onClick,
   children,
   className = '',
-  dodgeRadius = 120,
-  maxDodgeAttempts = 8,
+  dodgeRadius = 150,
+  dodgeDuration = 35, // Default 35 seconds
 }: DodgingButtonProps) {
   const [position, setPosition] = useState({ x: 0, y: 0 });
-  const [dodgeCount, setDodgeCount] = useState(0);
   const [isDodgeEnabled, setIsDodgeEnabled] = useState(true);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [shouldSwap, setShouldSwap] = useState(false);
+  const [rotation, setRotation] = useState(0);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const yesButtonRef = useRef<HTMLButtonElement | null>(null);
+  const startTimeRef = useRef<number>(Date.now());
 
   // Initialize button position in center
   useEffect(() => {
@@ -33,15 +36,20 @@ export default function DodgingButton({
       
       setPosition({ x: centerX, y: centerY });
       setIsInitialized(true);
+      startTimeRef.current = Date.now();
     }
   }, [isInitialized]);
 
+  // Disable dodge after duration
   useEffect(() => {
-    // Disable dodge after max attempts
-    if (dodgeCount >= maxDodgeAttempts) {
+    const timer = setTimeout(() => {
       setIsDodgeEnabled(false);
-    }
-  }, [dodgeCount, maxDodgeAttempts]);
+      setShouldSwap(false);
+      setRotation(0);
+    }, dodgeDuration * 1000);
+
+    return () => clearTimeout(timer);
+  }, [dodgeDuration]);
 
   const calculateDistance = (x1: number, y1: number, x2: number, y2: number) => {
     return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
@@ -80,26 +88,36 @@ export default function DodgingButton({
 
     const distance = calculateDistance(e.clientX, e.clientY, buttonCenterX, buttonCenterY);
 
-    // Adjust dodge radius based on attempts (progressive difficulty reduction)
-    const adjustedRadius = dodgeRadius * Math.max(0.3, 1 - dodgeCount / (maxDodgeAttempts * 1.5));
-
-    if (distance < adjustedRadius) {
-      const newPosition = getRandomPosition();
-      setPosition(newPosition);
-      setDodgeCount(prev => prev + 1);
+    if (distance < dodgeRadius) {
+      // Random behavior selection
+      const behavior = Math.random();
+      
+      if (behavior < 0.3 && yesButtonRef.current) {
+        // 30% chance: Swap with YES button
+        setShouldSwap(true);
+        setTimeout(() => setShouldSwap(false), 800);
+      } else if (behavior < 0.5) {
+        // 20% chance: Spin
+        setRotation(prev => prev + 360);
+        const newPosition = getRandomPosition();
+        setPosition(newPosition);
+      } else {
+        // 50% chance: Just move away
+        const newPosition = getRandomPosition();
+        setPosition(newPosition);
+      }
     }
   };
 
   const handleClick = (e: MouseEvent<HTMLButtonElement>) => {
-    // Only allow click if dodge is disabled
     if (!isDodgeEnabled) {
       onClick();
     } else {
-      // Prevent click and dodge away
+      // Prevent click and dodge away with spin
       e.preventDefault();
+      setRotation(prev => prev + 720);
       const newPosition = getRandomPosition();
       setPosition(newPosition);
-      setDodgeCount(prev => prev + 1);
     }
   };
 
@@ -112,13 +130,14 @@ export default function DodgingButton({
       <button
         ref={buttonRef}
         onClick={handleClick}
-        className={`absolute transition-all duration-200 ease-out ${className}`}
+        className={`absolute transition-all duration-300 ease-out ${className}`}
         style={{
           left: `${position.x}px`,
           top: `${position.y}px`,
+          transform: `rotate(${rotation}deg)`,
         }}
       >
-        {children}
+        {shouldSwap ? 'YES 😍' : children}
       </button>
     </div>
   );

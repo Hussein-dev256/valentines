@@ -80,17 +80,17 @@ describe('DodgingButton Property Tests', () => {
 
   /**
    * Property 12: Progressive dodge difficulty reduction
-   * For any sequence of dodge attempts, after a threshold number of attempts,
-   * the dodge behavior should become easier (reduced speed or position swap)
+   * For any sequence of dodge attempts, after a threshold duration,
+   * the dodge behavior should become disabled
    * **Validates: Requirements 5.4**
    */
   it('Property 12: Dodge difficulty reduces progressively', () => {
     fc.assert(
       fc.property(
-        fc.integer({ min: 1, max: 20 }),
-        (maxAttempts) => {
+        fc.integer({ min: 1, max: 60 }),
+        (dodgeDuration) => {
           const { container } = render(
-            <DodgingButton onClick={vi.fn()} maxDodgeAttempts={maxAttempts}>
+            <DodgingButton onClick={vi.fn()} dodgeDuration={dodgeDuration}>
               Test
             </DodgingButton>
           );
@@ -98,8 +98,8 @@ describe('DodgingButton Property Tests', () => {
           const button = container.querySelector('button');
           expect(button).toBeTruthy();
           
-          // Component should accept maxDodgeAttempts prop
-          // After max attempts, button should become clickable
+          // Component should accept dodgeDuration prop
+          // After duration, button should become clickable
         }
       ),
       { numRuns: 100 }
@@ -108,18 +108,18 @@ describe('DodgingButton Property Tests', () => {
 
   /**
    * Property 13: Eventual NO button clickability
-   * For any sufficiently long sequence of dodge attempts, the NO button should
+   * For any sufficiently long duration, the NO button should
    * eventually become clickable without further dodging
    * **Validates: Requirements 5.5**
    */
-  it('Property 13: Button becomes clickable after max attempts', () => {
+  it('Property 13: Button becomes clickable after duration', () => {
     fc.assert(
       fc.property(
         fc.integer({ min: 0, max: 5 }),
-        (maxAttempts) => {
+        (dodgeDuration) => {
           const mockOnClick = vi.fn();
           const { container } = render(
-            <DodgingButton onClick={mockOnClick} maxDodgeAttempts={maxAttempts}>
+            <DodgingButton onClick={mockOnClick} dodgeDuration={dodgeDuration}>
               Test
             </DodgingButton>
           );
@@ -127,8 +127,8 @@ describe('DodgingButton Property Tests', () => {
           const button = container.querySelector('button');
           expect(button).toBeTruthy();
           
-          // With 0 max attempts, button should be immediately clickable
-          if (maxAttempts === 0 && button) {
+          // With 0 duration, button should be immediately clickable
+          if (dodgeDuration === 0 && button) {
             button.click();
             expect(mockOnClick).toHaveBeenCalled();
           }
