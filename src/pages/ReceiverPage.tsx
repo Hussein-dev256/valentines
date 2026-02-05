@@ -156,7 +156,7 @@ export default function ReceiverPage() {
             
             <DodgingButton
               onClick={handleNoClick}
-              dodgeDuration={Math.floor(Math.random() * 21) + 25} // Random 25-45 seconds
+              dodgeDuration={Math.floor(Math.random() * 11) + 15} // Random 15-25 seconds
               className="w-64 bg-gray-300 hover:bg-gray-400 text-gray-700 font-bold py-4 px-8 rounded-full text-lg"
             >
               NO 🙃
