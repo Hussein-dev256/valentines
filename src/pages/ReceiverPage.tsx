@@ -26,13 +26,16 @@ export default function ReceiverPage() {
         return;
       }
 
-      // Check if user is the sender - redirect to results page
+      // Check if user is the sender of THIS SPECIFIC Valentine
+      // Only redirect if they created THIS Valentine (not just any Valentine)
       const resultToken = getResultTokenByValentineId(id);
       if (resultToken) {
+        // User is the sender of THIS Valentine - redirect to results
         navigate(`/r/${resultToken}`, { replace: true });
         return;
       }
 
+      // User is NOT the sender - show receiver experience
       try {
         const data = await getValentine(id);
         setValentine(data);
