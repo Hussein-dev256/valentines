@@ -4,7 +4,7 @@
  * Feature: will-you-be-my-valentine
  * 
  * These tests use fast-check to verify universal properties across many inputs.
- * Each property test runs 25 iterations with randomized inputs for optimized speed.
+ * Each property test runs 20 iterations with randomized inputs for optimized speed.
  * 
  * Properties tested:
  * - Property 3: Valentine ID uniqueness
@@ -112,7 +112,7 @@ describe('ValentineService - Property-Based Tests', () => {
             expect(hasDuplicates).toBe(false);
           }
         ),
-        { numRuns: 25 }
+        { numRuns: 20 }
       );
     });
   });

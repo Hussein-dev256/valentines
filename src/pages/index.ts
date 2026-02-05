@@ -1,0 +1,5 @@
+export { default as OriginPage } from './OriginPage';
+export { default as CreateValentinePage } from './CreateValentinePage';
+export { default as ReceiverPage } from './ReceiverPage';
+export { default as ResultsPage } from './ResultsPage';
+export { default as NotFoundPage } from './NotFoundPage';

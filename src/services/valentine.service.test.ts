@@ -48,7 +48,7 @@ describe('ValentineService', () => {
       let callCount = 0;
       vi.spyOn(crypto, 'randomUUID').mockImplementation(() => {
         callCount++;
-        return callCount === 1 ? mockValentineId : mockResultToken;
+        return (callCount === 1 ? mockValentineId : mockResultToken) as `${string}-${string}-${string}-${string}-${string}`;
       });
 
       const mockInsert = vi.fn().mockResolvedValue({ error: null });
@@ -90,7 +90,7 @@ describe('ValentineService', () => {
       let callCount = 0;
       vi.spyOn(crypto, 'randomUUID').mockImplementation(() => {
         callCount++;
-        return callCount === 1 ? mockValentineId : mockResultToken;
+        return (callCount === 1 ? mockValentineId : mockResultToken) as `${string}-${string}-${string}-${string}-${string}`;
       });
 
       const mockInsert = vi.fn().mockResolvedValue({ error: null });
@@ -120,7 +120,7 @@ describe('ValentineService', () => {
       let callCount = 0;
       vi.spyOn(crypto, 'randomUUID').mockImplementation(() => {
         callCount++;
-        return callCount === 1 ? mockValentineId : mockResultToken;
+        return (callCount === 1 ? mockValentineId : mockResultToken) as `${string}-${string}-${string}-${string}-${string}`;
       });
 
       const mockInsert = vi.fn().mockResolvedValue({ error: null });
@@ -467,3 +467,4 @@ describe('ValentineService', () => {
     });
   });
 });
+
