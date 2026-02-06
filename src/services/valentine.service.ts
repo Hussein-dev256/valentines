@@ -9,6 +9,7 @@
  */
 
 import { supabase, withRetry, handleSupabaseError, ApiError } from './api.service';
+import { getOrCreateSenderId, getSenderId } from '../utils/senderIdentity';
 import type {
   CreateValentineResponse,
   GetValentineResponse,
@@ -35,11 +36,12 @@ export async function createValentine(
 
   return withRetry(async () => {
     try {
-      // Generate UUIDs for valentine and result token
+      // Generate UUIDs for valentine, result token, and sender
       const valentineId = crypto.randomUUID();
       const resultToken = crypto.randomUUID();
+      const senderId = getOrCreateSenderId(); // Get or create anonymous sender ID
 
-      // Insert Valentine record
+      // Insert Valentine record with sender_id
       const { error: valentineError } = await supabase
         .from('valentines')
         .insert({
@@ -47,6 +49,7 @@ export async function createValentine(
           sender_name: senderName?.trim() || null,
           receiver_name: receiverName.trim(),
           status: 'pending' as ValentineStatus,
+          sender_id: senderId, // Store sender ID for validation
         });
 
       if (valentineError) {
@@ -88,14 +91,14 @@ export async function createValentine(
  * Get Valentine data by ID
  * 
  * @param id - Valentine ID (UUID)
- * @returns Valentine data including sender name, receiver name, and status
+ * @returns Valentine data including sender name, receiver name, status, and sender_id
  */
 export async function getValentine(id: string): Promise<GetValentineResponse> {
   return withRetry(async () => {
     try {
       const { data, error } = await supabase
         .from('valentines')
-        .select('sender_name, receiver_name, status')
+        .select('sender_name, receiver_name, status, sender_id')
         .eq('id', id)
         .single();
 
@@ -111,6 +114,7 @@ export async function getValentine(id: string): Promise<GetValentineResponse> {
         sender_name: data.sender_name,
         receiver_name: data.receiver_name,
         status: data.status,
+        sender_id: data.sender_id,
       };
     } catch (error) {
       if (error instanceof ApiError) {
@@ -182,7 +186,7 @@ export async function submitAnswer(
  * Get result by result token
  * 
  * @param token - Result token (UUID)
- * @returns Result data including status and timestamps
+ * @returns Result data including status, timestamps, and sender_id
  */
 export async function getResult(token: string): Promise<GetResultResponse> {
   return withRetry(async () => {
@@ -202,10 +206,10 @@ export async function getResult(token: string): Promise<GetResultResponse> {
         throw new ApiError('Invalid result token', 404);
       }
 
-      // Then, get the Valentine data
+      // Then, get the Valentine data including sender_id
       const { data: valentineData, error: valentineError } = await supabase
         .from('valentines')
-        .select('status, created_at, answered_at')
+        .select('status, created_at, answered_at, sender_id')
         .eq('id', tokenData.valentine_id)
         .single();
 
@@ -221,6 +225,7 @@ export async function getResult(token: string): Promise<GetResultResponse> {
         status: valentineData.status,
         created_at: valentineData.created_at,
         answered_at: valentineData.answered_at,
+        sender_id: valentineData.sender_id,
       };
     } catch (error) {
       if (error instanceof ApiError) {
@@ -229,4 +234,83 @@ export async function getResult(token: string): Promise<GetResultResponse> {
       handleSupabaseError(error);
     }
   });
+}
+
+/**
+ * Validate if the current user is the sender of a Valentine
+ * 
+ * @param valentineId - Valentine ID (UUID)
+ * @returns true if current user is the sender, false otherwise
+ */
+export async function validateSenderAccess(valentineId: string): Promise<boolean> {
+  try {
+    const localSenderId = getSenderId();
+    
+    // If no local sender ID, user is not the sender
+    if (!localSenderId) {
+      return false;
+    }
+
+    // Fetch valentine's sender_id from database
+    const { data, error } = await supabase
+      .from('valentines')
+      .select('sender_id')
+      .eq('id', valentineId)
+      .single();
+
+    if (error || !data) {
+      return false;
+    }
+
+    // Compare local sender ID with database sender ID
+    return data.sender_id === localSenderId;
+  } catch (error) {
+    console.error('Error validating sender access:', error);
+    return false;
+  }
+}
+
+/**
+ * Validate if the current user is the sender for a result token
+ * 
+ * @param resultToken - Result token (UUID)
+ * @returns true if current user is the sender, false otherwise
+ */
+export async function validateSenderAccessByToken(resultToken: string): Promise<boolean> {
+  try {
+    const localSenderId = getSenderId();
+    
+    // If no local sender ID, user is not the sender
+    if (!localSenderId) {
+      return false;
+    }
+
+    // Get valentine_id from result token
+    const { data: tokenData, error: tokenError } = await supabase
+      .from('result_tokens')
+      .select('valentine_id')
+      .eq('token', resultToken)
+      .single();
+
+    if (tokenError || !tokenData) {
+      return false;
+    }
+
+    // Fetch valentine's sender_id from database
+    const { data: valentineData, error: valentineError } = await supabase
+      .from('valentines')
+      .select('sender_id')
+      .eq('id', tokenData.valentine_id)
+      .single();
+
+    if (valentineError || !valentineData) {
+      return false;
+    }
+
+    // Compare local sender ID with database sender ID
+    return valentineData.sender_id === localSenderId;
+  } catch (error) {
+    console.error('Error validating sender access by token:', error);
+    return false;
+  }
 }

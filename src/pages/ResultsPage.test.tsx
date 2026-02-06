@@ -34,7 +34,9 @@ describe('ResultsPage', () => {
       status: 'yes',
       created_at: new Date().toISOString(),
       answered_at: new Date().toISOString(),
+      sender_id: 'test-sender-id',
     });
+    vi.spyOn(valentineService, 'validateSenderAccessByToken').mockResolvedValue(true);
 
     renderWithRouter(<ResultsPage />);
     
@@ -50,7 +52,9 @@ describe('ResultsPage', () => {
       status: 'yes',
       created_at: new Date().toISOString(),
       answered_at: new Date().toISOString(),
+      sender_id: 'test-sender-id',
     });
+    vi.spyOn(valentineService, 'validateSenderAccessByToken').mockResolvedValue(true);
 
     renderWithRouter(<ResultsPage />);
     
@@ -71,7 +75,9 @@ describe('ResultsPage', () => {
       status: 'pending',
       created_at: new Date().toISOString(),
       answered_at: null,
+      sender_id: 'test-sender-id',
     });
+    vi.spyOn(valentineService, 'validateSenderAccessByToken').mockResolvedValue(true);
 
     renderWithRouter(<ResultsPage />);
     
@@ -87,7 +93,9 @@ describe('ResultsPage', () => {
       status: 'yes',
       created_at: new Date().toISOString(),
       answered_at: new Date().toISOString(),
+      sender_id: 'test-sender-id',
     });
+    vi.spyOn(valentineService, 'validateSenderAccessByToken').mockResolvedValue(true);
 
     renderWithRouter(<ResultsPage />);
     
@@ -110,7 +118,9 @@ describe('ResultsPage', () => {
       status: 'no',
       created_at: new Date().toISOString(),
       answered_at: new Date().toISOString(),
+      sender_id: 'test-sender-id',
     });
+    vi.spyOn(valentineService, 'validateSenderAccessByToken').mockResolvedValue(true);
 
     renderWithRouter(<ResultsPage />);
     

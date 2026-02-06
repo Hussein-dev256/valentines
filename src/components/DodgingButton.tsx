@@ -6,6 +6,7 @@ interface DodgingButtonProps {
   className?: string;
   dodgeDuration?: number;
   dodgeRadius?: number; // For test compatibility
+  disabled?: boolean;
 }
 
 export default function DodgingButton({
@@ -13,6 +14,7 @@ export default function DodgingButton({
   onClick,
   className = '',
   dodgeDuration = 24000, // 24 seconds total (3 cycles of 6s ON + 2s OFF)
+  disabled = false,
 }: DodgingButtonProps) {
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDodging, setIsDodging] = useState(false);
@@ -77,7 +79,7 @@ export default function DodgingButton({
   }, []);
 
   const handleMouseEnter = () => {
-    if (!isEnabled || !buttonRef.current) return;
+    if (!isEnabled || !buttonRef.current || disabled) return;
 
     setIsDodging(true);
 
@@ -111,7 +113,7 @@ export default function DodgingButton({
   };
 
   const handleClick = () => {
-    if (!isEnabled) {
+    if (!isEnabled && !disabled) {
       onClick();
     }
   };
@@ -123,13 +125,14 @@ export default function DodgingButton({
       onMouseEnter={handleMouseEnter}
       onTouchStart={handleMouseEnter}
       className={className}
+      disabled={disabled}
       style={{
         position: isDodging && !shouldSwap ? 'fixed' : 'relative',
         left: isDodging && !shouldSwap ? `${position.x}px` : 'auto',
         top: isDodging && !shouldSwap ? `${position.y}px` : 'auto',
-        opacity: isEnabled ? 0.5 : 1,
+        opacity: disabled ? 0.5 : (isEnabled ? 0.5 : 1),
         transition: 'all 400ms cubic-bezier(0.4, 0, 0.2, 1)',
-        cursor: isEnabled ? 'not-allowed' : 'pointer',
+        cursor: disabled ? 'not-allowed' : (isEnabled ? 'not-allowed' : 'pointer'),
         transform: `rotate(${rotation}deg)`,
         order: shouldSwap ? -1 : 0,
       }}

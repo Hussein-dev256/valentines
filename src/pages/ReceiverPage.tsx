@@ -5,10 +5,10 @@ import GlassContainer from '../components/GlassContainer';
 import GlossyHeart from '../components/GlossyHeart';
 import RainingHearts from '../components/HeartParticles';
 import DodgingButton from '../components/DodgingButton';
-import { getValentine, submitAnswer } from '../services/valentine.service';
+import { getValentine, submitAnswer, validateSenderAccess } from '../services/valentine.service';
 import { trackEvent, EventTypes } from '../services/analytics.service';
 import { celebrateYes } from '../utils/confetti';
-import { isSender, getResultTokenByValentineId } from '../utils/resultTokenStorage';
+import { getResultTokenByValentineId } from '../utils/resultTokenStorage';
 
 export default function ReceiverPage() {
     const { id } = useParams<{ id: string }>();
@@ -17,6 +17,7 @@ export default function ReceiverPage() {
     const [loading, setLoading] = useState(true);
     const [answered, setAnswered] = useState(false);
     const [answer, setAnswer] = useState<'yes' | 'no' | null>(null);
+    const [submitting, setSubmitting] = useState(false);
 
     useEffect(() => {
         loadValentine();
@@ -26,8 +27,12 @@ export default function ReceiverPage() {
         if (!id) return;
 
         try {
-            // Check if user is the sender - redirect to results page
-            if (isSender(id)) {
+            // CRITICAL: Check if user is the sender using backend validation
+            // This prevents sender from accessing the answering page
+            const isSender = await validateSenderAccess(id);
+            
+            if (isSender) {
+                // Sender must NEVER see answering page - redirect to results
                 const resultToken = getResultTokenByValentineId(id);
                 if (resultToken) {
                     navigate(`/r/${resultToken}`, { replace: true });
@@ -53,8 +58,9 @@ export default function ReceiverPage() {
     };
 
     const handleAnswer = async (response: 'yes' | 'no') => {
-        if (!id || answered) return;
+        if (!id || answered || submitting) return;
 
+        setSubmitting(true);
         try {
             await submitAnswer(id, response);
             setAnswered(true);
@@ -70,6 +76,7 @@ export default function ReceiverPage() {
             );
         } catch (error) {
             console.error('Error answering valentine:', error);
+            setSubmitting(false); // Re-enable buttons on error
         }
     };
 
@@ -186,6 +193,7 @@ export default function ReceiverPage() {
                             <button
                                 onClick={() => handleAnswer('yes')}
                                 className="btn-primary"
+                                disabled={submitting}
                             >
                                 YES! 😍
                             </button>
@@ -193,6 +201,7 @@ export default function ReceiverPage() {
                                 onClick={() => handleAnswer('no')}
                                 className="btn-secondary"
                                 dodgeDuration={24000}
+                                disabled={submitting}
                             >
                                 NO 🙃
                             </DodgingButton>

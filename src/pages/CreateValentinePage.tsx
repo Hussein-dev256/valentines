@@ -15,12 +15,26 @@ export default function CreateValentinePage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
+    const MAX_NAME_LENGTH = 50;
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
 
         if (!receiverName.trim()) {
             setError('Please enter the receiver\'s name');
+            return;
+        }
+
+        // Validate receiver name length
+        if (receiverName.trim().length > MAX_NAME_LENGTH) {
+            setError(`Receiver name must be ${MAX_NAME_LENGTH} characters or less`);
+            return;
+        }
+
+        // Validate sender name length if provided
+        if (senderName && senderName.trim().length > MAX_NAME_LENGTH) {
+            setError(`Sender name must be ${MAX_NAME_LENGTH} characters or less`);
             return;
         }
 
@@ -85,6 +99,7 @@ export default function CreateValentinePage() {
                                 onChange={(e) => setSenderName(e.target.value)}
                                 placeholder="Anonymous"
                                 label="Your Name (Optional)"
+                                maxLength={50}
                             />
 
                             <GlassInput
@@ -97,6 +112,7 @@ export default function CreateValentinePage() {
                                 label="Their Name"
                                 required
                                 error={error}
+                                maxLength={50}
                             />
 
                             <div className="pt-4 space-y-3">

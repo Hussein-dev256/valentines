@@ -11,6 +11,7 @@ export interface SolidInputProps {
   label?: string;
   error?: string;
   className?: string;
+  maxLength?: number;
 }
 
 /**
@@ -47,6 +48,7 @@ const SolidInput: React.FC<SolidInputProps> = ({
   label,
   error,
   className = '',
+  maxLength,
 }) => {
   return (
     <div className="solid-input-wrapper">
@@ -64,6 +66,7 @@ const SolidInput: React.FC<SolidInputProps> = ({
         onChange={onChange}
         placeholder={placeholder}
         required={required}
+        maxLength={maxLength}
         className={`solid-input ${error ? 'has-error' : ''} ${className}`}
         aria-invalid={error ? 'true' : 'false'}
         aria-describedby={error ? `${id}-error` : undefined}

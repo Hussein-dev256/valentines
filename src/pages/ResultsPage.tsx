@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Footer from '../components/Footer';
 import GlassContainer from '../components/GlassContainer';
 import RainingHearts from '../components/HeartParticles';
-import { getResult } from '../services/valentine.service';
+import { getResult, validateSenderAccessByToken } from '../services/valentine.service';
 import { trackEvent, EventTypes } from '../services/analytics.service';
 import { celebrateYes } from '../utils/confetti';
 
@@ -13,6 +13,7 @@ export default function ResultsPage() {
     const [result, setResult] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [revealed, setRevealed] = useState(false);
+    const [accessDenied, setAccessDenied] = useState(false);
 
     useEffect(() => {
         loadResult();
@@ -22,6 +23,17 @@ export default function ResultsPage() {
         if (!token) return;
 
         try {
+            // CRITICAL: Validate sender access using backend validation
+            // This prevents receivers from accessing results page
+            const isSender = await validateSenderAccessByToken(token);
+            
+            if (!isSender) {
+                // Only sender can view results - deny access to others
+                setAccessDenied(true);
+                setLoading(false);
+                return;
+            }
+
             const data = await getResult(token);
             setResult(data);
             trackEvent(EventTypes.RESULT_VIEWED, undefined, { token });
@@ -51,6 +63,30 @@ export default function ResultsPage() {
                             <p className="text-body-large">Loading...</p>
                         </GlassContainer>
                     </div>
+                </div>
+            </>
+        );
+    }
+
+    if (accessDenied) {
+        return (
+            <>
+                <div className="liquid-gradient-bg" />
+                <RainingHearts />
+                <div className="scene-container">
+                    <div className="content-center">
+                        <GlassContainer>
+                            <h2 className="text-h2 mb-4">Access Denied 🚫</h2>
+                            <p className="text-body mb-8">
+                                This results page is only for the sender. 
+                                If someone sent you a Valentine, you should answer it first! 💌
+                            </p>
+                            <button onClick={() => navigate('/')} className="btn-primary">
+                                Go Home
+                            </button>
+                        </GlassContainer>
+                    </div>
+                    <Footer />
                 </div>
             </>
         );

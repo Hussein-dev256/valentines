@@ -36,7 +36,9 @@ describe('ReceiverPage', () => {
       sender_name: 'John',
       receiver_name: 'Jane',
       status: 'pending',
+      sender_id: 'test-sender-id',
     });
+    vi.spyOn(valentineService, 'validateSenderAccess').mockResolvedValue(false);
 
     renderWithRouter();
     
@@ -55,7 +57,9 @@ describe('ReceiverPage', () => {
       sender_name: null,
       receiver_name: 'Jane',
       status: 'pending',
+      sender_id: 'test-sender-id',
     });
+    vi.spyOn(valentineService, 'validateSenderAccess').mockResolvedValue(false);
 
     renderWithRouter();
     
@@ -76,7 +80,9 @@ describe('ReceiverPage', () => {
       sender_name: 'John',
       receiver_name: 'Jane',
       status: 'pending',
+      sender_id: 'test-sender-id',
     });
+    vi.spyOn(valentineService, 'validateSenderAccess').mockResolvedValue(false);
 
     renderWithRouter();
     
@@ -99,7 +105,9 @@ describe('ReceiverPage', () => {
       sender_name: 'John',
       receiver_name: 'Jane',
       status: 'pending',
+      sender_id: 'test-sender-id',
     });
+    vi.spyOn(valentineService, 'validateSenderAccess').mockResolvedValue(false);
 
     renderWithRouter();
     
@@ -122,7 +130,9 @@ describe('ReceiverPage', () => {
       sender_name: 'John',
       receiver_name: 'Jane',
       status: 'pending',
+      sender_id: 'test-sender-id',
     });
+    vi.spyOn(valentineService, 'validateSenderAccess').mockResolvedValue(false);
 
     renderWithRouter();
     

@@ -10,6 +10,7 @@ export interface Valentine {
   sender_name: string | null;
   receiver_name: string;
   status: ValentineStatus;
+  sender_id: string | null; // UUID - anonymous sender identifier
   created_at: string; // ISO timestamp
   answered_at: string | null; // ISO timestamp
 }
@@ -47,6 +48,7 @@ export interface GetValentineResponse {
   sender_name: string | null;
   receiver_name: string;
   status: ValentineStatus;
+  sender_id: string | null; // UUID - for sender validation
 }
 
 export interface SubmitAnswerRequest {
@@ -61,6 +63,7 @@ export interface GetResultResponse {
   status: ValentineStatus;
   created_at: string;
   answered_at: string | null;
+  sender_id: string | null; // UUID - for sender validation
 }
 
 export interface TrackEventRequest {
