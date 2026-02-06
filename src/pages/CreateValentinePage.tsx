@@ -46,6 +46,7 @@ export default function CreateValentinePage() {
                 state: {
                     publicUrl: result.public_url,
                     resultUrl: result.result_url,
+                    receiverName: receiverName.trim(),
                 },
             });
         } catch (err) {

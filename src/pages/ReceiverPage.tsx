@@ -170,15 +170,11 @@ export default function ReceiverPage() {
                             From: <strong>{valentine.sender_name}</strong>
                         </p>
 
-                        {/* Action buttons - smaller, normal-sized buttons */}
-                        <div className="button-row-mobile fade-in" style={{ animationDelay: '0.8s' }}>
+                        {/* Action buttons - smaller, always horizontal for dodging gameplay */}
+                        <div className="button-row-game fade-in" style={{ animationDelay: '0.8s' }}>
                             <button
                                 onClick={() => handleAnswer('yes')}
                                 className="btn-primary"
-                                style={{ 
-                                    minWidth: '120px',
-                                    padding: 'clamp(12px, 2vh, 16px) clamp(24px, 4vw, 32px)'
-                                }}
                             >
                                 YES! 😍
                             </button>

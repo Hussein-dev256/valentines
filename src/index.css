@@ -1050,3 +1050,36 @@ h1, h2, h3, h4, h5, h6, p, span, a, button, input, textarea, label {
     max-width: 280px;
   }
 }
+
+/* YES/NO buttons - always horizontal, smaller size for dodging gameplay */
+.button-row-game {
+  display: flex;
+  flex-direction: row;
+  gap: clamp(12px, 3vw, 20px);
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+.button-row-game button {
+  /* Smaller buttons for better dodging gameplay */
+  min-width: clamp(80px, 15vw, 100px);
+  padding: clamp(10px, 1.8vh, 14px) clamp(20px, 3.5vw, 28px);
+  font-size: clamp(13px, 2vh, 15px);
+}
+
+@media (max-width: 480px) {
+  .button-row-game {
+    /* Keep horizontal on mobile */
+    flex-direction: row;
+    gap: clamp(10px, 2.5vw, 16px);
+  }
+  
+  .button-row-game button {
+    /* Even smaller on mobile for more playing space */
+    min-width: clamp(70px, 12vw, 90px);
+    padding: clamp(8px, 1.5vh, 12px) clamp(16px, 3vw, 24px);
+    font-size: clamp(12px, 1.8vh, 14px);
+  }
+}

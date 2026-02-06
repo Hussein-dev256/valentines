@@ -7,7 +7,7 @@ import ShareInterface from '../components/ShareInterface';
 export default function CreatedPromptPage() {
     const location = useLocation();
     const navigate = useNavigate();
-    const { publicUrl, resultUrl } = location.state || {};
+    const { publicUrl, resultUrl, receiverName } = location.state || {};
 
     if (!publicUrl || !resultUrl) {
         navigate('/');
@@ -47,7 +47,10 @@ export default function CreatedPromptPage() {
                         </p>
 
                         <div className="w-full max-w-md mb-10 fade-in" style={{ animationDelay: '0.4s' }}>
-                            <ShareInterface url={publicUrl} />
+                            <ShareInterface 
+                                url={publicUrl} 
+                                receiverName={receiverName}
+                            />
                         </div>
 
                         <p className="text-body mb-8 fade-in text-center" style={{ animationDelay: '0.6s', color: 'rgba(0, 0, 0, 0.7)' }}>

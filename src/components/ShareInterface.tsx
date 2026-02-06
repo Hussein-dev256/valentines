@@ -3,6 +3,7 @@ import { trackEvent, EventTypes } from '../services/analytics.service';
 
 interface ShareInterfaceProps {
   url: string;
+  receiverName?: string;
   title?: string;
   text?: string;
   onSuccess?: () => void;
@@ -11,20 +12,31 @@ interface ShareInterfaceProps {
 
 export default function ShareInterface({
   url,
+  receiverName,
   title = 'Will You Be My Valentine?',
-  text = 'Check out this Valentine!',
+  text,
   onSuccess,
   onError,
 }: ShareInterfaceProps) {
   const [copied, setCopied] = useState(false);
 
+  // Create personalized share text
+  const getShareText = () => {
+    if (receiverName) {
+      return `${receiverName}, will you be my Valentine? 💘`;
+    }
+    return text || 'Will you be my Valentine? 💘';
+  };
+
   const handleShare = async () => {
+    const shareText = getShareText();
+    
     // Try native share first
     if (navigator.share) {
       try {
         await navigator.share({
           title,
-          text,
+          text: shareText,
           url,
         });
         
@@ -93,6 +105,25 @@ export default function ShareInterface({
         <p className="text-body mb-3" style={{ color: 'rgba(0, 0, 0, 0.6)' }}>
           Or copy the link:
         </p>
+        
+        {/* Personalized message display */}
+        {receiverName && (
+          <div 
+            className="mb-3 p-3 rounded-lg"
+            style={{ 
+              background: 'rgba(236, 72, 153, 0.08)',
+              border: '1px solid rgba(236, 72, 153, 0.2)'
+            }}
+          >
+            <p className="text-body-large" style={{ color: 'rgba(0, 0, 0, 0.85)', fontWeight: '500' }}>
+              {receiverName}, will you be my Valentine? 💘
+            </p>
+            <p className="text-body-small mt-1" style={{ color: 'rgba(0, 0, 0, 0.5)' }}>
+              This is how they'll see it
+            </p>
+          </div>
+        )}
+        
         <div className="flex gap-3">
           <input
             type="text"
