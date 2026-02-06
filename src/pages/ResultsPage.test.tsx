@@ -67,7 +67,6 @@ describe('ResultsPage', () => {
   });
 
   it('displays pending status when not answered', async () => {
-    const user = userEvent.setup();
     vi.spyOn(valentineService, 'getResult').mockResolvedValue({
       status: 'pending',
       created_at: new Date().toISOString(),
@@ -77,14 +76,8 @@ describe('ResultsPage', () => {
     renderWithRouter(<ResultsPage />);
     
     await waitFor(() => {
-      expect(screen.getByText(/The Moment of Truth/i)).toBeInTheDocument();
-    });
-
-    const revealButton = screen.getByRole('button', { name: /Show Me The Result/i });
-    await user.click(revealButton);
-    
-    await waitFor(() => {
       expect(screen.getByText(/Still Waiting/i)).toBeInTheDocument();
+      expect(screen.getByText(/haven't answered yet/i)).toBeInTheDocument();
     });
   });
 

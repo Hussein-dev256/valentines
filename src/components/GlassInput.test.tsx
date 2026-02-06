@@ -77,6 +77,6 @@ describe('GlassInput', () => {
     );
     
     const input = screen.getByRole('textbox');
-    expect(input).toHaveClass('glass-input');
+    expect(input).toHaveClass('solid-input');
   });
 });

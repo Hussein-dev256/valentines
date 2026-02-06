@@ -20,9 +20,10 @@ describe('OriginPage', () => {
   it('renders correctly with introduction message', () => {
     renderWithRouter(<OriginPage />);
     
-    expect(screen.getByText(/WILL YOU BE MY/i)).toBeInTheDocument();
+    expect(screen.getByText(/WILL Y/i)).toBeInTheDocument();
+    expect(screen.getByText(/U BE MY/i)).toBeInTheDocument();
     expect(screen.getByText(/Valentine\?/i)).toBeInTheDocument();
-    expect(screen.getByText(/Eyeing someone and you're shy/i)).toBeInTheDocument();
+    expect(screen.getByText(/Got your eyes on someone/i)).toBeInTheDocument();
   });
 
   it('displays CTA button', () => {
@@ -46,6 +47,6 @@ describe('OriginPage', () => {
   it('displays footer attribution', () => {
     renderWithRouter(<OriginPage />);
     
-    expect(screen.getByText(/Made with ❤️/i)).toBeInTheDocument();
+    expect(screen.getByText(/Made with love by Web Developer Uganda/i)).toBeInTheDocument();
   });
 });

@@ -28,12 +28,15 @@ describe('CreateValentinePage', () => {
     const user = userEvent.setup();
     renderWithRouter(<CreateValentinePage />);
     
+    const receiverInput = screen.getByLabelText(/Their Name/i);
     const submitButton = screen.getByRole('button', { name: /Create Valentine/i });
+    
+    // Try to submit without filling the required field
     await user.click(submitButton);
     
-    await waitFor(() => {
-      expect(screen.getByText(/Please enter the receiver's name/i)).toBeInTheDocument();
-    });
+    // HTML5 validation should prevent submission
+    // Check that the input is marked as invalid
+    expect(receiverInput).toBeInvalid();
   });
 
   it('submits form with valid receiver name', async () => {
@@ -76,7 +79,7 @@ describe('CreateValentinePage', () => {
     await user.click(submitButton);
     
     await waitFor(() => {
-      expect(screen.getByText(/Network error/i)).toBeInTheDocument();
+      expect(screen.getByText(/Failed to create Valentine/i)).toBeInTheDocument();
     });
   });
 });

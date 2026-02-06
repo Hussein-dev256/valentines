@@ -42,7 +42,8 @@ describe('ReceiverPage', () => {
     
     await waitFor(() => {
       expect(screen.getByText(/Jane,/i)).toBeInTheDocument();
-      expect(screen.getByText(/WILL YOU BE MY/i)).toBeInTheDocument();
+      expect(screen.getByText(/WILL Y/i)).toBeInTheDocument();
+      expect(screen.getByText(/BE MY/i)).toBeInTheDocument();
       expect(screen.getByText(/VALENTINE\?/i)).toBeInTheDocument();
       expect(screen.getByText(/From:/i)).toBeInTheDocument();
       expect(screen.getByText(/John/i)).toBeInTheDocument();
@@ -60,7 +61,8 @@ describe('ReceiverPage', () => {
     
     await waitFor(() => {
       expect(screen.getByText(/Jane,/i)).toBeInTheDocument();
-      expect(screen.getByText(/WILL YOU BE MY/i)).toBeInTheDocument();
+      expect(screen.getByText(/WILL Y/i)).toBeInTheDocument();
+      expect(screen.getByText(/BE MY/i)).toBeInTheDocument();
       expect(screen.getByText(/VALENTINE\?/i)).toBeInTheDocument();
       expect(screen.getByText(/From:/i)).toBeInTheDocument();
     });

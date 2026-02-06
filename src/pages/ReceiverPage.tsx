@@ -4,6 +4,7 @@ import Footer from '../components/Footer';
 import GlassContainer from '../components/GlassContainer';
 import GlossyHeart from '../components/GlossyHeart';
 import RainingHearts from '../components/HeartParticles';
+import DodgingButton from '../components/DodgingButton';
 import { getValentine, submitAnswer } from '../services/valentine.service';
 import { trackEvent, EventTypes } from '../services/analytics.service';
 import { celebrateYes } from '../utils/confetti';
@@ -175,12 +176,13 @@ export default function ReceiverPage() {
                             >
                                 YES! 💖
                             </button>
-                            <button
+                            <DodgingButton
                                 onClick={() => handleAnswer('no')}
                                 className="btn-secondary"
+                                dodgeDuration={20000}
                             >
                                 NO
-                            </button>
+                            </DodgingButton>
                         </div>
                     </GlassContainer>
                 </div>

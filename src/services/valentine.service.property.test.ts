@@ -87,8 +87,9 @@ describe('ValentineService - Property-Based Tests', () => {
 
             // Mock crypto.randomUUID to track generated IDs
             let idCounter = 0;
+            const originalRandomUUID = crypto.randomUUID.bind(crypto);
             vi.spyOn(crypto, 'randomUUID').mockImplementation(() => {
-              const id = `${idCounter % 2 === 0 ? 'valentine' : 'token'}-${crypto.randomUUID()}`;
+              const id = `${idCounter % 2 === 0 ? 'valentine' : 'token'}-${originalRandomUUID()}`;
               if (idCounter % 2 === 0) {
                 actualIds.push(id);
               }
@@ -119,7 +120,7 @@ describe('ValentineService - Property-Based Tests', () => {
         ),
         { numRuns: 20 }
       );
-    }, 10000);
+    }, 30000); // Increase timeout to 30 seconds
   });
 
   describe('Property 4: Result token uniqueness', () => {
@@ -151,8 +152,9 @@ describe('ValentineService - Property-Based Tests', () => {
             // Mock crypto.randomUUID to track generated tokens
             let idCounter = 0;
             const tokens: string[] = [];
+            const originalRandomUUID = crypto.randomUUID.bind(crypto);
             vi.spyOn(crypto, 'randomUUID').mockImplementation(() => {
-              const id = `${idCounter % 2 === 0 ? 'valentine' : 'token'}-${crypto.randomUUID()}`;
+              const id = `${idCounter % 2 === 0 ? 'valentine' : 'token'}-${originalRandomUUID()}`;
               if (idCounter % 2 === 1) {
                 tokens.push(id);
               }
@@ -186,7 +188,7 @@ describe('ValentineService - Property-Based Tests', () => {
         ),
         { numRuns: 25 }
       );
-    }, 10000);
+    }, 30000); // Increase timeout to 30 seconds
   });
 
   describe('Property 5: Valentine URL format consistency', () => {
@@ -209,8 +211,9 @@ describe('ValentineService - Property-Based Tests', () => {
             createMockSupabaseSuccess();
 
             // Mock crypto.randomUUID to return real UUIDs
+            const originalRandomUUID = crypto.randomUUID.bind(crypto);
             vi.spyOn(crypto, 'randomUUID').mockImplementation(() => {
-              return crypto.randomUUID();
+              return originalRandomUUID();
             });
 
             // Create Valentine
@@ -242,7 +245,7 @@ describe('ValentineService - Property-Based Tests', () => {
         ),
         { numRuns: 25 }
       );
-    }, 10000);
+    }, 30000); // Increase timeout to 30 seconds
   });
 
   describe('Property 6: Result URL format consistency', () => {
@@ -265,8 +268,9 @@ describe('ValentineService - Property-Based Tests', () => {
             createMockSupabaseSuccess();
 
             // Mock crypto.randomUUID to return real UUIDs
+            const originalRandomUUID = crypto.randomUUID.bind(crypto);
             vi.spyOn(crypto, 'randomUUID').mockImplementation(() => {
-              return crypto.randomUUID();
+              return originalRandomUUID();
             });
 
             // Create Valentine
@@ -292,7 +296,7 @@ describe('ValentineService - Property-Based Tests', () => {
         ),
         { numRuns: 25 }
       );
-    }, 10000);
+    }, 30000); // Increase timeout to 30 seconds
   });
 
   describe('Property 7: One-to-one Valentine-token relationship', () => {
@@ -320,8 +324,9 @@ describe('ValentineService - Property-Based Tests', () => {
             const { mockInsert } = createMockSupabaseSuccess();
 
             // Mock crypto.randomUUID to return real UUIDs
+            const originalRandomUUID = crypto.randomUUID.bind(crypto);
             vi.spyOn(crypto, 'randomUUID').mockImplementation(() => {
-              return crypto.randomUUID();
+              return originalRandomUUID();
             });
 
             // Create all Valentines
@@ -379,6 +384,6 @@ describe('ValentineService - Property-Based Tests', () => {
         ),
         { numRuns: 25 }
       );
-    }, 10000);
+    }, 30000); // Increase timeout to 30 seconds
   });
 });

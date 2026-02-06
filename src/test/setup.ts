@@ -21,3 +21,8 @@ vi.mock('*.svg?react', () => ({
     React.createElement('svg', { ...props, ref, 'data-testid': 'mock-svg' })
   ),
 }));
+
+// Mock canvas-confetti to prevent canvas errors in tests
+vi.mock('canvas-confetti', () => ({
+  default: vi.fn(() => null),
+}));
