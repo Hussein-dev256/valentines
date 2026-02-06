@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import Footer from '../components/Footer';
 import GlassContainer from '../components/GlassContainer';
 import GlossyHeart from '../components/GlossyHeart';
@@ -8,9 +8,11 @@ import DodgingButton from '../components/DodgingButton';
 import { getValentine, submitAnswer } from '../services/valentine.service';
 import { trackEvent, EventTypes } from '../services/analytics.service';
 import { celebrateYes } from '../utils/confetti';
+import { isSender, getResultTokenByValentineId } from '../utils/resultTokenStorage';
 
 export default function ReceiverPage() {
     const { id } = useParams<{ id: string }>();
+    const navigate = useNavigate();
     const [valentine, setValentine] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [answered, setAnswered] = useState(false);
@@ -24,6 +26,15 @@ export default function ReceiverPage() {
         if (!id) return;
 
         try {
+            // Check if user is the sender - redirect to results page
+            if (isSender(id)) {
+                const resultToken = getResultTokenByValentineId(id);
+                if (resultToken) {
+                    navigate(`/r/${resultToken}`, { replace: true });
+                    return;
+                }
+            }
+
             const data = await getValentine(id);
             setValentine(data);
 
