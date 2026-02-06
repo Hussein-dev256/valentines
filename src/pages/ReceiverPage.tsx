@@ -116,10 +116,10 @@ export default function ReceiverPage() {
                             ) : (
                                 <>
                                     <h1 className="text-hero mb-8 fade-in-blur" style={{ whiteSpace: 'nowrap' }}>
-                                        Got it 😌
+                                        Oouucchh...Got it 😌
                                     </h1>
                                     <p className="text-body-large mb-12 fade-in" style={{ animationDelay: '0.2s' }}>
-                                        Thanks for being honest 💫
+                                        Thanks for being cold 💀
                                     </p>
                                 </>
                             )}

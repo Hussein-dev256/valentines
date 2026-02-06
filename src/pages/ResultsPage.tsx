@@ -151,7 +151,7 @@ export default function ResultsPage() {
                                 Go and behave yourself now 😌
                             </p>
                             <button onClick={() => navigate('/create')} className="btn-primary fade-in" style={{ animationDelay: '0.6s' }}>
-                                Ask another person out 💘
+                                Ask another person out 💘, I won't spill I promise 😉 
                             </button>
                         </>
                     ) : (
@@ -169,7 +169,7 @@ export default function ResultsPage() {
                                 BUT HEY 😌
                             </h2>
                             <p className="text-body-large mb-4 fade-in" style={{ animationDelay: '0.8s' }}>
-                                Valentine plenty outside 😏
+                                There's plenty of fish in the sea...😏
                             </p>
                             <p className="text-body-large mb-12 fade-in" style={{ animationDelay: '1s' }}>
                                 Go try again.

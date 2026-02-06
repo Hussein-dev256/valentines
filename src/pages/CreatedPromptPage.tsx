@@ -34,7 +34,7 @@ export default function CreatedPromptPage() {
                         {/* Header with emoji */}
                         <div className="text-center mb-8 fade-in-blur">
                             <div className="text-6xl mb-4">💌</div>
-                            <h1 className="text-h2" style={{ color: 'rgba(0, 0, 0, 0.9)' }}>
+                            <h1 className="text-h2" style={{ color: 'rgba(0, 0, 0, 0.9)', whiteSpace: 'nowrap' }}>
                                 Valentine Created!
                             </h1>
                             <p className="text-body mt-3" style={{ color: 'rgba(0, 0, 0, 0.6)' }}>
@@ -54,7 +54,7 @@ export default function CreatedPromptPage() {
                             Do you want to see if they've answered?
                         </p>
 
-                        <div className="flex flex-col sm:flex-row gap-4 justify-center fade-in" style={{ animationDelay: '0.8s' }}>
+                        <div className="button-row-mobile fade-in" style={{ animationDelay: '0.8s' }}>
                             <button onClick={handleViewResults} className="btn-primary">
                                 Yes, show me! 👀
                             </button>

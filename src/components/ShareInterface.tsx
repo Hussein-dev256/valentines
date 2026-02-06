@@ -61,32 +61,57 @@ export default function ShareInterface({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="w-full space-y-4">
+      {/* Share Button */}
       <button
         onClick={handleShare}
-        className="w-full bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 px-6 rounded-full transition-colors duration-200"
+        className="btn-primary w-full"
       >
-        Share Valentine Link
+        Share 💌
       </button>
       
+      {/* Copy Success Message */}
       {copied && (
-        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded text-center">
-          Link copied to clipboard! 📋
+        <div 
+          className="text-center fade-in"
+          style={{ 
+            padding: 'clamp(12px, 2vh, 16px)',
+            background: 'rgba(16, 185, 129, 0.1)',
+            border: '1px solid rgba(16, 185, 129, 0.3)',
+            borderRadius: '12px',
+            color: 'rgba(16, 185, 129, 1)',
+            fontSize: 'clamp(13px, 2vh, 14px)',
+            fontWeight: '500'
+          }}
+        >
+          Link copied! 📋
         </div>
       )}
       
+      {/* Copy Link Section */}
       <div className="text-center">
-        <p className="text-gray-600 text-sm mb-2">Or copy the link:</p>
-        <div className="flex gap-2">
+        <p className="text-body mb-3" style={{ color: 'rgba(0, 0, 0, 0.6)' }}>
+          Or copy the link:
+        </p>
+        <div className="flex gap-3">
           <input
             type="text"
             value={url}
             readOnly
-            className="flex-1 px-3 py-2 border border-gray-300 rounded text-sm"
+            className="solid-input flex-1 text-sm"
+            style={{ 
+              cursor: 'default',
+              userSelect: 'all'
+            }}
           />
           <button
             onClick={handleCopyToClipboard}
-            className="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-4 rounded transition-colors duration-200"
+            className="btn-secondary"
+            style={{
+              minWidth: 'auto',
+              padding: 'clamp(12px, 2vh, 16px) clamp(20px, 3.5vw, 28px)',
+              whiteSpace: 'nowrap'
+            }}
           >
             Copy
           </button>
