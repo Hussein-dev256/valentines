@@ -314,3 +314,29 @@ export async function validateSenderAccessByToken(resultToken: string): Promise<
     return false;
   }
 }
+
+/**
+ * Get result token by valentine ID from database
+ * This allows sender to access results even without localStorage
+ * 
+ * @param valentineId - Valentine ID (UUID)
+ * @returns Result token or null if not found
+ */
+export async function getResultTokenFromDatabase(valentineId: string): Promise<string | null> {
+  try {
+    const { data, error } = await supabase
+      .from('result_tokens')
+      .select('token')
+      .eq('valentine_id', valentineId)
+      .single();
+
+    if (error || !data) {
+      return null;
+    }
+
+    return data.token;
+  } catch (error) {
+    console.error('Error fetching result token from database:', error);
+    return null;
+  }
+}

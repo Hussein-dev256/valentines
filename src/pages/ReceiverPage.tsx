@@ -5,7 +5,7 @@ import GlassContainer from '../components/GlassContainer';
 import GlossyHeart from '../components/GlossyHeart';
 import RainingHearts from '../components/HeartParticles';
 import DodgingButton from '../components/DodgingButton';
-import { getValentine, submitAnswer, validateSenderAccess } from '../services/valentine.service';
+import { getValentine, submitAnswer, validateSenderAccess, getResultTokenFromDatabase } from '../services/valentine.service';
 import { trackEvent, EventTypes } from '../services/analytics.service';
 import { celebrateYes } from '../utils/confetti';
 import { getResultTokenByValentineId } from '../utils/resultTokenStorage';
@@ -18,6 +18,7 @@ export default function ReceiverPage() {
     const [answered, setAnswered] = useState(false);
     const [answer, setAnswer] = useState<'yes' | 'no' | null>(null);
     const [submitting, setSubmitting] = useState(false);
+    const [senderBlocked, setSenderBlocked] = useState(false);
 
     useEffect(() => {
         loadValentine();
@@ -28,18 +29,34 @@ export default function ReceiverPage() {
 
         try {
             // CRITICAL: Check if user is the sender using backend validation
-            // This prevents sender from accessing the answering page
+            // Same link, different behavior: sender → results, receiver → answering page
             const isSender = await validateSenderAccess(id);
             
             if (isSender) {
-                // Sender must NEVER see answering page - redirect to results
-                const resultToken = getResultTokenByValentineId(id);
+                // Sender clicks same link → redirect to results page
+                // First try localStorage (fast path)
+                let resultToken = getResultTokenByValentineId(id);
+                
+                // If not in localStorage, fetch from database (incognito/different device)
+                if (!resultToken) {
+                    resultToken = await getResultTokenFromDatabase(id);
+                }
+                
                 if (resultToken) {
+                    // Redirect to results page with the token
                     navigate(`/r/${resultToken}`, { replace: true });
+                    return;
+                } else {
+                    // This should never happen (every valentine has a result token)
+                    // But handle gracefully just in case
+                    console.error('Result token not found for valentine:', id);
+                    setSenderBlocked(true);
+                    setLoading(false);
                     return;
                 }
             }
 
+            // Not sender: show answering page (receiver flow)
             const data = await getValentine(id);
             setValentine(data);
 
@@ -91,6 +108,36 @@ export default function ReceiverPage() {
                             <p className="text-body-large">Loading...</p>
                         </GlassContainer>
                     </div>
+                </div>
+            </>
+        );
+    }
+
+    if (senderBlocked) {
+        return (
+            <>
+                <div className="liquid-gradient-bg" />
+                <RainingHearts />
+                <div className="scene-container">
+                    <div className="content-center">
+                        <GlassContainer>
+                            <h1 className="text-hero mb-8">Hold Up! 🚫</h1>
+                            <p className="text-body-large mb-8">
+                                You can't answer your own Valentine! 😅
+                            </p>
+                            <p className="text-body mb-12">
+                                This link is for the person you sent it to. 
+                                Check your results page to see if they've answered.
+                            </p>
+                            <button
+                                onClick={() => navigate('/')}
+                                className="btn-primary"
+                            >
+                                Go Home
+                            </button>
+                        </GlassContainer>
+                    </div>
+                    <Footer />
                 </div>
             </>
         );
