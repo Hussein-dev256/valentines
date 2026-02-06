@@ -55,21 +55,26 @@ describe('DodgingButton', () => {
   });
 
   it('button becomes clickable after dodge duration', async () => {
-    const user = userEvent.setup();
+    vi.useFakeTimers();
     const mockOnClick = vi.fn();
     
     render(
-      <DodgingButton onClick={mockOnClick} dodgeDuration={0.1}>
+      <DodgingButton onClick={mockOnClick} dodgeDuration={100}>
         Click Me
       </DodgingButton>
     );
     
     const button = screen.getByRole('button', { name: /Click Me/i });
     
+    // Fast-forward past the dodge duration
+    vi.advanceTimersByTime(150);
+    
     // After duration, button should be clickable
-    await user.click(button);
+    await userEvent.click(button);
     
     // Should eventually call onClick
     expect(mockOnClick).toHaveBeenCalled();
+    
+    vi.useRealTimers();
   });
 });

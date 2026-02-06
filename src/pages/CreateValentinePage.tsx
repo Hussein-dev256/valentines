@@ -64,50 +64,63 @@ export default function CreateValentinePage() {
             <div className="scene-container">
                 <div className="content-center">
                     <GlassContainer>
-                    <h1 className="text-h2 mb-8 fade-in-blur">
-                        Create Your Valentine 💘
-                    </h1>
+                        {/* Header with emoji */}
+                        <div className="text-center mb-8 fade-in-blur">
+                            <div className="text-6xl mb-4">💘</div>
+                            <h1 className="text-h2" style={{ color: 'rgba(0, 0, 0, 0.9)' }}>
+                                Create Your Valentine
+                            </h1>
+                            <p className="text-body mt-3" style={{ color: 'rgba(0, 0, 0, 0.6)' }}>
+                                Fill in the details below to create a special Valentine's message
+                            </p>
+                        </div>
 
-                    <form onSubmit={handleSubmit} className="w-full max-w-md space-y-6 fade-in" style={{ animationDelay: '0.2s' }}>
-                        <GlassInput
-                            type="text"
-                            id="senderName"
-                            name="senderName"
-                            value={senderName}
-                            onChange={(e) => setSenderName(e.target.value)}
-                            placeholder="Anonymous"
-                            label="Your Name (Optional)"
-                        />
+                        <form onSubmit={handleSubmit} className="w-full max-w-md space-y-6 fade-in" style={{ animationDelay: '0.2s' }}>
+                            <GlassInput
+                                type="text"
+                                id="senderName"
+                                name="senderName"
+                                value={senderName}
+                                onChange={(e) => setSenderName(e.target.value)}
+                                placeholder="Anonymous"
+                                label="Your Name (Optional)"
+                            />
 
-                        <GlassInput
-                            type="text"
-                            id="receiverName"
-                            name="receiverName"
-                            value={receiverName}
-                            onChange={(e) => setReceiverName(e.target.value)}
-                            placeholder="Enter their name"
-                            label="Their Name"
-                            required
-                            error={error}
-                        />
+                            <GlassInput
+                                type="text"
+                                id="receiverName"
+                                name="receiverName"
+                                value={receiverName}
+                                onChange={(e) => setReceiverName(e.target.value)}
+                                placeholder="Enter their name"
+                                label="Their Name"
+                                required
+                                error={error}
+                            />
 
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="btn-primary w-full"
-                        >
-                            {loading ? 'Creating...' : 'Create Valentine'}
-                        </button>
+                            <div className="pt-4 space-y-3">
+                                <button
+                                    type="submit"
+                                    disabled={loading}
+                                    className="btn-primary w-full"
+                                    style={{ 
+                                        opacity: loading ? 0.7 : 1,
+                                        cursor: loading ? 'not-allowed' : 'pointer'
+                                    }}
+                                >
+                                    {loading ? 'Creating... ✨' : 'Create Valentine 💖'}
+                                </button>
 
-                        <button
-                            type="button"
-                            onClick={() => navigate('/')}
-                            className="btn-secondary w-full"
-                        >
-                            Cancel
-                        </button>
-                    </form>
-                </GlassContainer>
+                                <button
+                                    type="button"
+                                    onClick={() => navigate('/')}
+                                    className="btn-secondary w-full"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </form>
+                    </GlassContainer>
                 </div>
 
                 <Footer />

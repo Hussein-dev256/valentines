@@ -116,10 +116,10 @@ export default function ReceiverPage() {
                             ) : (
                                 <>
                                     <h1 className="text-hero mb-8 fade-in-blur">
-                                        Ouuchh, noted 😌
+                                        Got it 😌
                                     </h1>
                                     <p className="text-body-large mb-12 fade-in" style={{ animationDelay: '0.2s' }}>
-                                        Not your type? Ask out your type...
+                                        Thanks for being honest 💫
                                     </p>
                                 </>
                             )}
@@ -129,7 +129,7 @@ export default function ReceiverPage() {
                                 className="btn-primary fade-in"
                                 style={{ animationDelay: '0.4s' }}
                             >
-                                Ask someone out
+                                Ask another person out 💌
                             </button>
                         </GlassContainer>
                     </div>
@@ -168,20 +168,24 @@ export default function ReceiverPage() {
                             From: <strong>{valentine.sender_name}</strong>
                         </p>
 
-                        {/* Action buttons */}
-                        <div className="flex flex-col sm:flex-row gap-4 justify-center fade-in" style={{ animationDelay: '0.8s' }}>
+                        {/* Action buttons - smaller, normal-sized buttons */}
+                        <div className="flex flex-row gap-4 justify-center items-center fade-in" style={{ animationDelay: '0.8s' }}>
                             <button
                                 onClick={() => handleAnswer('yes')}
                                 className="btn-primary"
+                                style={{ 
+                                    minWidth: '120px',
+                                    padding: 'clamp(12px, 2vh, 16px) clamp(24px, 4vw, 32px)'
+                                }}
                             >
-                                YES! 💖
+                                YES! 😍
                             </button>
                             <DodgingButton
                                 onClick={() => handleAnswer('no')}
                                 className="btn-secondary"
-                                dodgeDuration={20000}
+                                dodgeDuration={24000}
                             >
-                                NO
+                                NO 🙃
                             </DodgingButton>
                         </div>
                     </GlassContainer>

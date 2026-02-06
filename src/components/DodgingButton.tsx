@@ -12,23 +12,28 @@ export default function DodgingButton({
   children,
   onClick,
   className = '',
-  dodgeDuration = 20000, // 20 seconds default
+  dodgeDuration = 24000, // 24 seconds total (3 cycles of 6s ON + 2s OFF)
 }: DodgingButtonProps) {
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDodging, setIsDodging] = useState(false);
   const [isEnabled, setIsEnabled] = useState(false);
+  const [rotation, setRotation] = useState(0);
+  const [shouldSwap, setShouldSwap] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const startTimeRef = useRef<number>(Date.now());
+  const yesButtonRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
     startTimeRef.current = Date.now();
     
-    // Cycle: OFF 2s, ON 5s, OFF 2s, ON 5s...
+    // Cycle: ON 6s, OFF 2s, ON 6s, OFF 2s, ON 6s, OFF 2s (24 seconds total)
     const cyclePattern = [
-      { enabled: false, duration: 2000 },
-      { enabled: true, duration: 5000 },
-      { enabled: false, duration: 2000 },
-      { enabled: true, duration: 5000 },
+      { enabled: true, duration: 6000 },   // ON for 6 seconds
+      { enabled: false, duration: 2000 },  // OFF for 2 seconds
+      { enabled: true, duration: 6000 },   // ON for 6 seconds
+      { enabled: false, duration: 2000 },  // OFF for 2 seconds
+      { enabled: true, duration: 6000 },   // ON for 6 seconds
+      { enabled: false, duration: 2000 },  // OFF for 2 seconds
     ];
 
     let currentCycle = 0;
@@ -56,23 +61,53 @@ export default function DodgingButton({
     return () => clearTimeout(cycleTimeout);
   }, [dodgeDuration]);
 
+  // Find YES button to swap positions with
+  useEffect(() => {
+    if (buttonRef.current) {
+      const parent = buttonRef.current.parentElement;
+      if (parent) {
+        const buttons = parent.querySelectorAll('button');
+        buttons.forEach(btn => {
+          if (btn !== buttonRef.current && btn.textContent?.includes('YES')) {
+            yesButtonRef.current = btn as HTMLButtonElement;
+          }
+        });
+      }
+    }
+  }, []);
+
   const handleMouseEnter = () => {
     if (!isEnabled || !buttonRef.current) return;
 
     setIsDodging(true);
 
-    // Calculate new random position
-    const button = buttonRef.current;
-    const rect = button.getBoundingClientRect();
-    const maxX = window.innerWidth - rect.width - 20;
-    const maxY = window.innerHeight - rect.height - 20;
+    // Random dodge behavior
+    const dodgeType = Math.random();
+    
+    if (dodgeType < 0.3 && yesButtonRef.current) {
+      // 30% chance: Swap positions with YES button
+      setShouldSwap(true);
+      setTimeout(() => setShouldSwap(false), 400);
+    } else if (dodgeType < 0.6) {
+      // 30% chance: Spin
+      setRotation(prev => prev + (Math.random() > 0.5 ? 360 : -360));
+    } else {
+      // 40% chance: Move to random position
+      const button = buttonRef.current;
+      const rect = button.getBoundingClientRect();
+      const maxX = window.innerWidth - rect.width - 20;
+      const maxY = window.innerHeight - rect.height - 20;
 
-    const newX = Math.random() * maxX;
-    const newY = Math.random() * maxY;
+      const newX = Math.random() * maxX;
+      const newY = Math.random() * maxY;
 
-    setPosition({ x: newX, y: newY });
+      setPosition({ x: newX, y: newY });
+    }
 
-    setTimeout(() => setIsDodging(false), 400);
+    setTimeout(() => {
+      setIsDodging(false);
+      setRotation(0);
+    }, 400);
   };
 
   const handleClick = () => {
@@ -89,12 +124,14 @@ export default function DodgingButton({
       onTouchStart={handleMouseEnter}
       className={className}
       style={{
-        position: isDodging ? 'fixed' : 'relative',
-        left: isDodging ? `${position.x}px` : 'auto',
-        top: isDodging ? `${position.y}px` : 'auto',
-        opacity: isEnabled ? 0.4 : 1,
+        position: isDodging && !shouldSwap ? 'fixed' : 'relative',
+        left: isDodging && !shouldSwap ? `${position.x}px` : 'auto',
+        top: isDodging && !shouldSwap ? `${position.y}px` : 'auto',
+        opacity: isEnabled ? 0.5 : 1,
         transition: 'all 400ms cubic-bezier(0.4, 0, 0.2, 1)',
         cursor: isEnabled ? 'not-allowed' : 'pointer',
+        transform: `rotate(${rotation}deg)`,
+        order: shouldSwap ? -1 : 0,
       }}
     >
       {children}

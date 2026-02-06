@@ -111,14 +111,19 @@ export default function ResultsPage() {
                     <div className="content-center">
                         <GlassContainer>
                             <h1 className="text-hero mb-8 fade-in-blur">
-                                The Moment of Truth 👀
+                                WAIT ✋😬
                             </h1>
                             <p className="text-body-large mb-12 fade-in" style={{ animationDelay: '0.2s' }}>
-                                Are you ready to see their response?
+                                Are you REALLY sure you wanna know?? 😭😂
                             </p>
-                            <button onClick={handleReveal} className="btn-primary fade-in" style={{ animationDelay: '0.4s' }}>
-                                Show Me The Result
-                            </button>
+                            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center fade-in" style={{ animationDelay: '0.4s' }}>
+                                <button onClick={handleReveal} className="btn-primary">
+                                    Yes… tell me 😭
+                                </button>
+                                <button onClick={() => navigate('/')} className="btn-secondary">
+                                    No no no 😅
+                                </button>
+                            </div>
                         </GlassContainer>
                     </div>
                     <Footer />
@@ -136,26 +141,44 @@ export default function ResultsPage() {
                     <GlassContainer>
                     {result.status === 'yes' ? (
                         <>
-                            <h1 className="text-hero mb-8 fade-in-blur">
-                                They Said YES! 🎉
+                            <h1 className="text-hero mb-4 fade-in-blur">
+                                GOOD NEWS 🎉💖
                             </h1>
-                            <p className="text-body-large mb-12 fade-in" style={{ animationDelay: '0.2s' }}>
-                                Congratulations! Time to plan that date 💖
+                            <h1 className="text-hero mb-8 fade-in-blur" style={{ animationDelay: '0.2s' }}>
+                                THEY SAID YESSS 😍😍
+                            </h1>
+                            <p className="text-body-large mb-12 fade-in" style={{ animationDelay: '0.4s' }}>
+                                Go and behave yourself now 😌
                             </p>
+                            <button onClick={() => navigate('/create')} className="btn-primary fade-in" style={{ animationDelay: '0.6s' }}>
+                                Ask another person out 💘
+                            </button>
                         </>
                     ) : (
                         <>
-                            <h1 className="text-hero mb-8 fade-in-blur">
-                                Not This Time 😔
+                            <h1 className="text-hero mb-4 fade-in-blur">
+                                Hmm… 😬😬
                             </h1>
-                            <p className="text-body-large mb-12 fade-in" style={{ animationDelay: '0.2s' }}>
-                                Don't worry, it takes courage to ask! There are plenty of fish in the sea 🐠
+                            <p className="text-body-large mb-8 fade-in" style={{ animationDelay: '0.2s' }}>
+                                This one hurts small sha…
                             </p>
+                            <h1 className="text-hero mb-8 fade-in-blur" style={{ animationDelay: '0.4s' }}>
+                                They said NO 😭💔
+                            </h1>
+                            <h2 className="text-h2 mb-4 fade-in" style={{ animationDelay: '0.6s' }}>
+                                BUT HEY 😌
+                            </h2>
+                            <p className="text-body-large mb-4 fade-in" style={{ animationDelay: '0.8s' }}>
+                                Valentine plenty outside 😏
+                            </p>
+                            <p className="text-body-large mb-12 fade-in" style={{ animationDelay: '1s' }}>
+                                Go try again.
+                            </p>
+                            <button onClick={() => navigate('/create')} className="btn-primary fade-in" style={{ animationDelay: '1.2s' }}>
+                                Ask another person out 💘
+                            </button>
                         </>
                     )}
-                    <button onClick={() => navigate('/create')} className="btn-primary fade-in" style={{ animationDelay: '0.4s' }}>
-                        Ask Someone Else
-                    </button>
                 </GlassContainer>
                 </div>
                 <Footer />

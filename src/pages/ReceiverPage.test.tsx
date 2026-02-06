@@ -134,7 +134,7 @@ describe('ReceiverPage', () => {
     await user.click(noButton);
     
     await waitFor(() => {
-      expect(screen.getByText(/Ouuchh, noted/i)).toBeInTheDocument();
+      expect(screen.getByText(/Got it/i)).toBeInTheDocument();
     });
   });
 

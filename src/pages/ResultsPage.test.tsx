@@ -39,8 +39,8 @@ describe('ResultsPage', () => {
     renderWithRouter(<ResultsPage />);
     
     await waitFor(() => {
-      expect(screen.getByText(/The Moment of Truth/i)).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /Show Me The Result/i })).toBeInTheDocument();
+      expect(screen.getByText(/WAIT/i)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Yes… tell me/i })).toBeInTheDocument();
     });
   });
 
@@ -55,14 +55,14 @@ describe('ResultsPage', () => {
     renderWithRouter(<ResultsPage />);
     
     await waitFor(() => {
-      expect(screen.getByText(/The Moment of Truth/i)).toBeInTheDocument();
+      expect(screen.getByText(/WAIT/i)).toBeInTheDocument();
     });
 
-    const revealButton = screen.getByRole('button', { name: /Show Me The Result/i });
+    const revealButton = screen.getByRole('button', { name: /Yes… tell me/i });
     await user.click(revealButton);
     
     await waitFor(() => {
-      expect(screen.getByText(/They Said YES!/i)).toBeInTheDocument();
+      expect(screen.getByText(/THEY SAID YESSS/i)).toBeInTheDocument();
     });
   });
 
@@ -92,15 +92,15 @@ describe('ResultsPage', () => {
     renderWithRouter(<ResultsPage />);
     
     await waitFor(() => {
-      expect(screen.getByText(/The Moment of Truth/i)).toBeInTheDocument();
+      expect(screen.getByText(/WAIT/i)).toBeInTheDocument();
     });
 
-    const revealButton = screen.getByRole('button', { name: /Show Me The Result/i });
+    const revealButton = screen.getByRole('button', { name: /Yes… tell me/i });
     await user.click(revealButton);
     
     await waitFor(() => {
-      expect(screen.getByText(/They Said YES!/i)).toBeInTheDocument();
-      expect(screen.getByText(/Congratulations!/i)).toBeInTheDocument();
+      expect(screen.getByText(/THEY SAID YESSS/i)).toBeInTheDocument();
+      expect(screen.getByText(/behave yourself/i)).toBeInTheDocument();
     });
   });
 
@@ -115,15 +115,15 @@ describe('ResultsPage', () => {
     renderWithRouter(<ResultsPage />);
     
     await waitFor(() => {
-      expect(screen.getByText(/The Moment of Truth/i)).toBeInTheDocument();
+      expect(screen.getByText(/WAIT/i)).toBeInTheDocument();
     });
 
-    const revealButton = screen.getByRole('button', { name: /Show Me The Result/i });
+    const revealButton = screen.getByRole('button', { name: /Yes… tell me/i });
     await user.click(revealButton);
     
     await waitFor(() => {
-      expect(screen.getByText(/Not This Time/i)).toBeInTheDocument();
-      expect(screen.getByText(/courage/i)).toBeInTheDocument();
+      expect(screen.getByText(/They said NO/i)).toBeInTheDocument();
+      expect(screen.getByText(/Valentine plenty outside/i)).toBeInTheDocument();
     });
   });
 
