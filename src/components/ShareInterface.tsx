@@ -45,10 +45,12 @@ export default function ShareInterface({
     // Try native share first
     if (navigator.share) {
       try {
+        // Share ONLY the text with embedded URL - no separate url parameter
+        // This ensures the share shows: "Name, will you be my Valentine? 💘 [URL]"
+        // instead of showing text and URL separately
         await navigator.share({
           title,
-          text: shareText,
-          url,
+          text: `${shareText} ${url}`,
         });
         
         trackEvent(EventTypes.SHARE_TRIGGERED);
@@ -71,7 +73,9 @@ export default function ShareInterface({
 
   const handleCopyToClipboard = async () => {
     try {
-      await navigator.clipboard.writeText(url);
+      // Copy the personalized text with URL embedded
+      const shareText = getShareText();
+      await navigator.clipboard.writeText(`${shareText} ${url}`);
       setCopied(true);
       trackEvent(EventTypes.SHARE_FALLBACK);
       

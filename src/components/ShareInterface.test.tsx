@@ -32,8 +32,7 @@ describe('ShareInterface', () => {
     
     expect(mockShare).toHaveBeenCalledWith({
       title: 'Will You Be My Valentine?',
-      text: 'Will you be my Valentine? 💘',
-      url: 'http://localhost/v/test-id',
+      text: 'Will you be my Valentine? 💘 http://localhost/v/test-id',
     });
   });
 
@@ -56,7 +55,7 @@ describe('ShareInterface', () => {
     const shareButton = screen.getByRole('button', { name: /Share 💌/i });
     await user.click(shareButton);
     
-    expect(mockWriteText).toHaveBeenCalledWith('http://localhost/v/test-id');
+    expect(mockWriteText).toHaveBeenCalledWith('Will you be my Valentine? 💘 http://localhost/v/test-id');
   });
 
   it('displays success feedback after copying to clipboard', async () => {
