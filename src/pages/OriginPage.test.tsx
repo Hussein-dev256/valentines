@@ -20,14 +20,15 @@ describe('OriginPage', () => {
   it('renders correctly with introduction message', () => {
     renderWithRouter(<OriginPage />);
     
-    expect(screen.getByText(/Will You Be My Valentine/i)).toBeInTheDocument();
-    expect(screen.getByText(/playful way to ask someone out/i)).toBeInTheDocument();
+    expect(screen.getByText(/WILL YOU BE MY/i)).toBeInTheDocument();
+    expect(screen.getByText(/Valentine\?/i)).toBeInTheDocument();
+    expect(screen.getByText(/Eyeing someone and you're shy/i)).toBeInTheDocument();
   });
 
   it('displays CTA button', () => {
     renderWithRouter(<OriginPage />);
     
-    const ctaButton = screen.getByRole('button', { name: /Create Your Valentine/i });
+    const ctaButton = screen.getByRole('button', { name: /Ask them out/i });
     expect(ctaButton).toBeInTheDocument();
   });
 
@@ -35,7 +36,7 @@ describe('OriginPage', () => {
     const user = userEvent.setup();
     renderWithRouter(<OriginPage />);
     
-    const ctaButton = screen.getByRole('button', { name: /Create Your Valentine/i });
+    const ctaButton = screen.getByRole('button', { name: /Ask them out/i });
     await user.click(ctaButton);
     
     // Check if navigation occurred (URL should change)

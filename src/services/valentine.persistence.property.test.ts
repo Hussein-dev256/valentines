@@ -9,29 +9,54 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import * as fc from 'fast-check';
 import { createValentine, submitAnswer, getValentine } from './valentine.service';
 
+// In-memory database for testing
+const valentinesDb = new Map<string, { sender_name: string | null; receiver_name: string; status: string }>();
+
 // Mock Supabase
 vi.mock('./api.service', () => ({
   supabase: {
-    from: vi.fn(() => ({
-      insert: vi.fn(() => ({ error: null })),
-      select: vi.fn(() => ({
-        eq: vi.fn(() => ({
-          single: vi.fn(() => ({
-            data: {
-              sender_name: 'Test',
-              receiver_name: 'Test',
-              status: 'pending',
-            },
-            error: null,
+    from: vi.fn((table: string) => {
+      if (table === 'valentines') {
+        return {
+          insert: vi.fn((data: any) => {
+            valentinesDb.set(data.id, {
+              sender_name: data.sender_name,
+              receiver_name: data.receiver_name,
+              status: data.status,
+            });
+            return { error: null };
+          }),
+          select: vi.fn(() => ({
+            eq: vi.fn((field: string, value: string) => ({
+              single: vi.fn(() => {
+                const data = valentinesDb.get(value);
+                return {
+                  data: data || null,
+                  error: data ? null : { message: 'Not found' },
+                };
+              }),
+            })),
           })),
-        })),
-      })),
-      update: vi.fn(() => ({
-        eq: vi.fn(() => ({
-          eq: vi.fn(() => ({ error: null })),
-        })),
-      })),
-    })),
+          update: vi.fn((data: any) => ({
+            eq: vi.fn((field: string, value: string) => ({
+              eq: vi.fn(() => {
+                const existing = valentinesDb.get(value);
+                if (existing && existing.status === 'pending') {
+                  valentinesDb.set(value, { ...existing, status: data.status });
+                }
+                return { error: null };
+              }),
+            })),
+          })),
+        };
+      }
+      if (table === 'result_tokens') {
+        return {
+          insert: vi.fn(() => ({ error: null })),
+        };
+      }
+      return {};
+    }),
   },
   withRetry: vi.fn((fn) => fn()),
   handleSupabaseError: vi.fn(),
@@ -41,6 +66,7 @@ vi.mock('./api.service', () => ({
 describe('Data Persistence Property Tests', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    valentinesDb.clear();
   });
 
   /**
@@ -52,8 +78,8 @@ describe('Data Persistence Property Tests', () => {
   it('Property 19: Valentine instances are isolated', async () => {
     await fc.assert(
       fc.asyncProperty(
-        fc.tuple(fc.string({ minLength: 1 }), fc.string({ minLength: 1 })),
-        fc.tuple(fc.string({ minLength: 1 }), fc.string({ minLength: 1 })),
+        fc.tuple(fc.string({ minLength: 1 }).filter(s => s.trim().length > 0), fc.string({ minLength: 1 }).filter(s => s.trim().length > 0)),
+        fc.tuple(fc.string({ minLength: 1 }).filter(s => s.trim().length > 0), fc.string({ minLength: 1 }).filter(s => s.trim().length > 0)),
         async ([receiver1, sender1], [receiver2, sender2]) => {
           // Create two Valentines
           const valentine1 = await createValentine(sender1, receiver1);
@@ -83,8 +109,8 @@ describe('Data Persistence Property Tests', () => {
   it('Property 20: Each creation generates new instance', async () => {
     await fc.assert(
       fc.asyncProperty(
-        fc.string({ minLength: 1 }),
-        fc.option(fc.string(), { nil: null }),
+        fc.string({ minLength: 1 }).filter(s => s.trim().length > 0),
+        fc.option(fc.string().filter(s => s.trim().length > 0), { nil: null }),
         async (receiverName, senderName) => {
           // Create multiple Valentines with same data
           const valentine1 = await createValentine(senderName, receiverName);
@@ -108,13 +134,16 @@ describe('Data Persistence Property Tests', () => {
   it('Property 21: Answers are associated with correct Valentine', async () => {
     await fc.assert(
       fc.asyncProperty(
-        fc.uuid(),
+        fc.string({ minLength: 1 }).filter(s => s.trim().length > 0),
         fc.constantFrom('yes', 'no'),
-        async (valentineId, answer) => {
-          await submitAnswer(valentineId, answer);
+        async (receiverName, answer) => {
+          // Create a valentine first
+          const created = await createValentine(null, receiverName);
+          
+          await submitAnswer(created.valentine_id, answer);
 
           // Answer should be retrievable for this Valentine
-          const valentine = await getValentine(valentineId);
+          const valentine = await getValentine(created.valentine_id);
           expect(valentine.status).toBe(answer);
         }
       ),
@@ -131,15 +160,15 @@ describe('Data Persistence Property Tests', () => {
   it('Property 22: Valentines are persisted correctly', async () => {
     await fc.assert(
       fc.asyncProperty(
-        fc.string({ minLength: 1 }),
-        fc.option(fc.string(), { nil: null }),
+        fc.string({ minLength: 1 }).filter(s => s.trim().length > 0),
+        fc.option(fc.string().filter(s => s.trim().length > 0), { nil: null }),
         async (receiverName, senderName) => {
           const created = await createValentine(senderName, receiverName);
 
           // Should be retrievable
           const retrieved = await getValentine(created.valentine_id);
-          expect(retrieved.receiver_name).toBe(receiverName);
-          expect(retrieved.sender_name).toBe(senderName);
+          expect(retrieved.receiver_name).toBe(receiverName.trim());
+          expect(retrieved.sender_name).toBe(senderName?.trim() || null);
         }
       ),
       { numRuns: 100 }
@@ -155,16 +184,19 @@ describe('Data Persistence Property Tests', () => {
   it('Property 23: Answers are persisted with timestamps', async () => {
     await fc.assert(
       fc.asyncProperty(
-        fc.uuid(),
+        fc.string({ minLength: 1 }).filter(s => s.trim().length > 0),
         fc.constantFrom('yes', 'no'),
-        async (valentineId, answer) => {
-          const result = await submitAnswer(valentineId, answer);
+        async (receiverName, answer) => {
+          // Create a valentine first
+          const created = await createValentine(null, receiverName);
+          
+          const result = await submitAnswer(created.valentine_id, answer);
 
           // Should succeed
           expect(result.success).toBe(true);
 
           // Status should be updated
-          const valentine = await getValentine(valentineId);
+          const valentine = await getValentine(created.valentine_id);
           expect(valentine.status).toBe(answer);
         }
       ),
@@ -181,7 +213,7 @@ describe('Data Persistence Property Tests', () => {
   it('Property 25: Valentine-answer referential integrity is maintained', async () => {
     await fc.assert(
       fc.asyncProperty(
-        fc.string({ minLength: 1 }),
+        fc.string({ minLength: 1 }).filter(s => s.trim().length > 0),
         fc.constantFrom('yes', 'no'),
         async (receiverName, answer) => {
           const created = await createValentine(null, receiverName);
@@ -205,7 +237,7 @@ describe('Data Persistence Property Tests', () => {
   it('Property 26: Token-Valentine referential integrity is maintained', async () => {
     await fc.assert(
       fc.asyncProperty(
-        fc.string({ minLength: 1 }),
+        fc.string({ minLength: 1 }).filter(s => s.trim().length > 0),
         async (receiverName) => {
           const created = await createValentine(null, receiverName);
 

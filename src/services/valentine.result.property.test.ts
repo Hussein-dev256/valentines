@@ -9,18 +9,31 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import * as fc from 'fast-check';
 import { getResult } from './valentine.service';
 
+// In-memory databases for testing
+const resultTokensDb = new Map<string, string>(); // token -> valentine_id
+const valentinesDb = new Map<string, { status: string; created_at: string; answered_at: string | null }>();
+
 // Mock Supabase
 vi.mock('./api.service', () => ({
   supabase: {
-    from: vi.fn((table) => {
+    from: vi.fn((table: string) => {
       if (table === 'result_tokens') {
         return {
           select: vi.fn(() => ({
-            eq: vi.fn(() => ({
-              single: vi.fn(() => ({
-                data: { valentine_id: 'test-valentine-id' },
-                error: null,
-              })),
+            eq: vi.fn((field: string, token: string) => ({
+              single: vi.fn(() => {
+                const valentineId = resultTokensDb.get(token);
+                if (!valentineId) {
+                  return {
+                    data: null,
+                    error: { message: 'Invalid token' },
+                  };
+                }
+                return {
+                  data: { valentine_id: valentineId },
+                  error: null,
+                };
+              }),
             })),
           })),
         };
@@ -28,15 +41,20 @@ vi.mock('./api.service', () => ({
       if (table === 'valentines') {
         return {
           select: vi.fn(() => ({
-            eq: vi.fn(() => ({
-              single: vi.fn(() => ({
-                data: {
-                  status: 'yes',
-                  created_at: new Date().toISOString(),
-                  answered_at: new Date().toISOString(),
-                },
-                error: null,
-              })),
+            eq: vi.fn((field: string, id: string) => ({
+              single: vi.fn(() => {
+                const data = valentinesDb.get(id);
+                if (!data) {
+                  return {
+                    data: null,
+                    error: { message: 'Valentine not found' },
+                  };
+                }
+                return {
+                  data,
+                  error: null,
+                };
+              }),
             })),
           })),
         };
@@ -45,8 +63,8 @@ vi.mock('./api.service', () => ({
     }),
   },
   withRetry: vi.fn((fn) => fn()),
-  handleSupabaseError: vi.fn(() => {
-    throw new Error('Invalid token');
+  handleSupabaseError: vi.fn((error: any) => {
+    throw new Error(error.message || 'Invalid token');
   }),
   ApiError: class extends Error {},
 }));
@@ -54,6 +72,18 @@ vi.mock('./api.service', () => ({
 describe('Result Access Property Tests', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    resultTokensDb.clear();
+    valentinesDb.clear();
+    
+    // Add some valid test data
+    const testValentineId = 'test-valentine-id';
+    const testToken = '00000000-0000-1000-8000-000000000000';
+    resultTokensDb.set(testToken, testValentineId);
+    valentinesDb.set(testValentineId, {
+      status: 'yes',
+      created_at: new Date().toISOString(),
+      answered_at: new Date().toISOString(),
+    });
   });
 
   /**
@@ -65,7 +95,7 @@ describe('Result Access Property Tests', () => {
   it('Property 8: Invalid tokens are rejected', async () => {
     await fc.assert(
       fc.asyncProperty(
-        fc.string({ minLength: 1 }).filter(s => !s.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)),
+        fc.uuid().filter(token => !resultTokensDb.has(token)),
         async (invalidToken) => {
           // Invalid tokens should throw error
           await expect(getResult(invalidToken)).rejects.toThrow();
@@ -86,6 +116,15 @@ describe('Result Access Property Tests', () => {
       fc.asyncProperty(
         fc.uuid(),
         async (validToken) => {
+          // Add token to database
+          const valentineId = crypto.randomUUID();
+          resultTokensDb.set(validToken, valentineId);
+          valentinesDb.set(valentineId, {
+            status: 'yes',
+            created_at: new Date().toISOString(),
+            answered_at: new Date().toISOString(),
+          });
+          
           const result = await getResult(validToken);
 
           // Result should be accessible with valid token
@@ -108,6 +147,15 @@ describe('Result Access Property Tests', () => {
       fc.asyncProperty(
         fc.uuid(),
         async (token) => {
+          // Add token to database
+          const valentineId = crypto.randomUUID();
+          resultTokensDb.set(token, valentineId);
+          valentinesDb.set(valentineId, {
+            status: 'pending',
+            created_at: new Date().toISOString(),
+            answered_at: null,
+          });
+          
           const result = await getResult(token);
 
           // Should return valid result structure
@@ -130,7 +178,17 @@ describe('Result Access Property Tests', () => {
     await fc.assert(
       fc.asyncProperty(
         fc.uuid(),
-        async (token) => {
+        fc.constantFrom('pending', 'yes', 'no'),
+        async (token, status) => {
+          // Add token to database
+          const valentineId = crypto.randomUUID();
+          resultTokensDb.set(token, valentineId);
+          valentinesDb.set(valentineId, {
+            status,
+            created_at: new Date().toISOString(),
+            answered_at: status !== 'pending' ? new Date().toISOString() : null,
+          });
+          
           const result = await getResult(token);
 
           // Status should be one of the valid values

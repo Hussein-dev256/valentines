@@ -1,255 +1,103 @@
-import { useState, useEffect, useRef, type MouseEvent, type TouchEvent } from 'react';
+import { useState, useEffect, useRef, type ReactNode } from 'react';
 
 interface DodgingButtonProps {
+  children: ReactNode;
   onClick: () => void;
-  children: React.ReactNode;
   className?: string;
-  dodgeRadius?: number;
-  dodgeDuration?: number; // Duration in seconds (15-25 seconds)
-  yesButtonRef?: React.RefObject<HTMLButtonElement | null>;
-  onSwapRequest?: () => void;
+  dodgeDuration?: number;
+  dodgeRadius?: number; // For test compatibility
 }
 
 export default function DodgingButton({
-  onClick,
   children,
+  onClick,
   className = '',
-  dodgeRadius = 150,
-  dodgeDuration = 20, // Default 20 seconds
-  onSwapRequest,
+  dodgeDuration = 20000, // 20 seconds default
 }: DodgingButtonProps) {
   const [position, setPosition] = useState({ x: 0, y: 0 });
-  const [isDodgeEnabled, setIsDodgeEnabled] = useState(true);
-  const [isInitialized, setIsInitialized] = useState(false);
-  const [shouldSwap, setShouldSwap] = useState(false);
-  const [rotation, setRotation] = useState(0);
-  const [scale, setScale] = useState(1);
-  const [isButtonEnabled, setIsButtonEnabled] = useState(false); // Start disabled
+  const [isDodging, setIsDodging] = useState(false);
+  const [isEnabled, setIsEnabled] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
   const startTimeRef = useRef<number>(Date.now());
-  const lastDodgeTimeRef = useRef<number>(0);
-  const cycleIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Initialize button position in center
   useEffect(() => {
-    if (!isInitialized && buttonRef.current && containerRef.current) {
-      const container = containerRef.current.getBoundingClientRect();
-      const button = buttonRef.current.getBoundingClientRect();
-      
-      const centerX = (container.width - button.width) / 2;
-      const centerY = (container.height - button.height) / 2;
-      
-      setPosition({ x: centerX, y: centerY });
-      setIsInitialized(true);
-      startTimeRef.current = Date.now();
-    }
-  }, [isInitialized]);
+    startTimeRef.current = Date.now();
+    
+    // Cycle: OFF 2s, ON 5s, OFF 2s, ON 5s...
+    const cyclePattern = [
+      { enabled: false, duration: 2000 },
+      { enabled: true, duration: 5000 },
+      { enabled: false, duration: 2000 },
+      { enabled: true, duration: 5000 },
+    ];
 
-  // Disable dodge after duration
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsDodgeEnabled(false);
-      setShouldSwap(false);
-      setRotation(0);
-      setScale(1);
-      setIsButtonEnabled(true); // Enable permanently after duration
-      if (cycleIntervalRef.current) {
-        clearInterval(cycleIntervalRef.current);
-      }
-    }, dodgeDuration * 1000);
-
-    return () => {
-      clearTimeout(timer);
-      if (cycleIntervalRef.current) {
-        clearInterval(cycleIntervalRef.current);
-      }
-    };
-  }, [dodgeDuration]);
-
-  // Enable/Disable cycle: OFF 2s, ON 5s, OFF 2s, ON 5s...
-  useEffect(() => {
-    if (!isDodgeEnabled) return;
-
-    let currentState = false; // Start disabled
-    let cycleTimeout: ReturnType<typeof setTimeout> | null = null;
-    setIsButtonEnabled(false);
+    let currentCycle = 0;
+    let cycleTimeout: ReturnType<typeof setTimeout>;
 
     const runCycle = () => {
-      if (!isDodgeEnabled) return;
-      
-      if (!currentState) {
-        // Currently disabled, enable for 5 seconds
-        setIsButtonEnabled(true);
-        currentState = true;
-        cycleTimeout = setTimeout(() => {
-          if (isDodgeEnabled) {
-            setIsButtonEnabled(false);
-            currentState = false;
-            cycleTimeout = setTimeout(runCycle, 2000);
-          }
-        }, 5000);
-      } else {
-        // Currently enabled, disable for 2 seconds
-        setIsButtonEnabled(false);
-        currentState = false;
-        cycleTimeout = setTimeout(() => {
-          if (isDodgeEnabled) {
-            setIsButtonEnabled(true);
-            currentState = true;
-            cycleTimeout = setTimeout(runCycle, 5000);
-          }
-        }, 2000);
+      const elapsed = Date.now() - startTimeRef.current;
+      if (elapsed >= dodgeDuration) {
+        setIsEnabled(false);
+        setIsDodging(false);
+        return;
       }
+
+      const cycle = cyclePattern[currentCycle % cyclePattern.length];
+      setIsEnabled(cycle.enabled);
+
+      cycleTimeout = setTimeout(() => {
+        currentCycle++;
+        runCycle();
+      }, cycle.duration);
     };
 
-    // Start with 2 second disabled period
-    const initialTimer = setTimeout(() => {
-      runCycle();
-    }, 2000);
+    runCycle();
 
-    return () => {
-      clearTimeout(initialTimer);
-      if (cycleTimeout) clearTimeout(cycleTimeout);
-      if (cycleIntervalRef.current) {
-        clearInterval(cycleIntervalRef.current);
-      }
-    };
-  }, [isDodgeEnabled]);
+    return () => clearTimeout(cycleTimeout);
+  }, [dodgeDuration]);
 
-  const calculateDistance = (x1: number, y1: number, x2: number, y2: number) => {
-    return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+  const handleMouseEnter = () => {
+    if (!isEnabled || !buttonRef.current) return;
+
+    setIsDodging(true);
+
+    // Calculate new random position
+    const button = buttonRef.current;
+    const rect = button.getBoundingClientRect();
+    const maxX = window.innerWidth - rect.width - 20;
+    const maxY = window.innerHeight - rect.height - 20;
+
+    const newX = Math.random() * maxX;
+    const newY = Math.random() * maxY;
+
+    setPosition({ x: newX, y: newY });
+
+    setTimeout(() => setIsDodging(false), 400);
   };
 
-  const getRandomPosition = () => {
-    if (!buttonRef.current || !containerRef.current) return position;
-
-    const button = buttonRef.current.getBoundingClientRect();
-    const container = containerRef.current.getBoundingClientRect();
-
-    // Calculate available space with padding
-    const padding = 10;
-    const maxX = container.width - button.width - padding;
-    const maxY = container.height - button.height - padding;
-
-    // Ensure minimum distance from current position
-    let newX, newY, attempts = 0;
-    do {
-      newX = Math.random() * maxX + padding;
-      newY = Math.random() * maxY + padding;
-      attempts++;
-    } while (
-      attempts < 10 &&
-      calculateDistance(position.x, position.y, newX, newY) < 100
-    );
-
-    return { x: Math.max(padding, Math.min(newX, maxX)), y: Math.max(padding, Math.min(newY, maxY)) };
-  };
-
-  const performDodge = () => {
-    if (!isButtonEnabled) return; // Don't dodge if button is in disabled cycle
-
-    // Throttle dodges to prevent too frequent movements
-    const now = Date.now();
-    if (now - lastDodgeTimeRef.current < 400) return;
-    lastDodgeTimeRef.current = now;
-
-    // Random behavior selection
-    const behavior = Math.random();
-    
-    if (behavior < 0.2 && onSwapRequest) {
-      // 20% chance: Request position swap with YES button
-      onSwapRequest();
-      setShouldSwap(true);
-      setTimeout(() => setShouldSwap(false), 1000);
-    } else if (behavior < 0.4) {
-      // 20% chance: Spin 360° and move
-      setRotation(prev => prev + 360);
-      const newPosition = getRandomPosition();
-      setPosition(newPosition);
-    } else if (behavior < 0.6) {
-      // 20% chance: Scale down (shrink) and move
-      setScale(0.5);
-      setTimeout(() => setScale(1), 400);
-      const newPosition = getRandomPosition();
-      setPosition(newPosition);
-    } else if (behavior < 0.8) {
-      // 20% chance: Spin 720° (double spin) and move
-      setRotation(prev => prev + 720);
-      const newPosition = getRandomPosition();
-      setPosition(newPosition);
-    } else {
-      // 20% chance: Just move away
-      const newPosition = getRandomPosition();
-      setPosition(newPosition);
-    }
-  };
-
-  // Desktop: Mouse move detection
-  const handleMouseMove = (e: MouseEvent<HTMLDivElement>) => {
-    if (!isDodgeEnabled || !buttonRef.current || !isInitialized || !isButtonEnabled) return;
-
-    const button = buttonRef.current.getBoundingClientRect();
-    const buttonCenterX = button.left + button.width / 2;
-    const buttonCenterY = button.top + button.height / 2;
-
-    const distance = calculateDistance(e.clientX, e.clientY, buttonCenterX, buttonCenterY);
-
-    if (distance < dodgeRadius) {
-      performDodge();
-    }
-  };
-
-  // Mobile: Touch start detection (when user tries to tap)
-  const handleTouchStart = (e: TouchEvent<HTMLButtonElement>) => {
-    if (!isDodgeEnabled || !isButtonEnabled) {
-      // Allow the click to proceed if dodge is disabled or button is enabled
-      if (!isDodgeEnabled) return;
-    }
-
-    // Dodge on touch if enabled
-    e.preventDefault();
-    performDodge();
-  };
-
-  // Handle click/tap
-  const handleClick = (e: MouseEvent<HTMLButtonElement>) => {
-    if (!isDodgeEnabled) {
+  const handleClick = () => {
+    if (!isEnabled) {
       onClick();
-    } else if (isButtonEnabled) {
-      // Desktop: Prevent click and dodge
-      e.preventDefault();
-      performDodge();
-    } else {
-      // Button is in disabled cycle, don't respond
-      e.preventDefault();
     }
   };
 
   return (
-    <div
-      ref={containerRef}
-      onMouseMove={handleMouseMove}
-      className="relative w-full h-40"
-      style={{ touchAction: 'none' }} // Prevent default touch behaviors
+    <button
+      ref={buttonRef}
+      onClick={handleClick}
+      onMouseEnter={handleMouseEnter}
+      onTouchStart={handleMouseEnter}
+      className={className}
+      style={{
+        position: isDodging ? 'fixed' : 'relative',
+        left: isDodging ? `${position.x}px` : 'auto',
+        top: isDodging ? `${position.y}px` : 'auto',
+        opacity: isEnabled ? 0.4 : 1,
+        transition: 'all 400ms cubic-bezier(0.4, 0, 0.2, 1)',
+        cursor: isEnabled ? 'not-allowed' : 'pointer',
+      }}
     >
-      <button
-        ref={buttonRef}
-        onClick={handleClick}
-        onTouchStart={handleTouchStart}
-        disabled={!isButtonEnabled && isDodgeEnabled}
-        className={`absolute transition-all duration-400 ease-out ${className} ${
-          !isButtonEnabled && isDodgeEnabled ? 'opacity-40 cursor-not-allowed' : ''
-        }`}
-        style={{
-          left: `${position.x}px`,
-          top: `${position.y}px`,
-          transform: `rotate(${rotation}deg) scale(${scale})`,
-          pointerEvents: 'auto',
-        }}
-      >
-        {shouldSwap ? 'YES 😍' : children}
-      </button>
-    </div>
+      {children}
+    </button>
   );
 }

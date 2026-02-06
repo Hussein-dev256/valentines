@@ -19,8 +19,8 @@ describe('CreateValentinePage', () => {
   it('renders form with receiver and sender name inputs', () => {
     renderWithRouter(<CreateValentinePage />);
     
-    expect(screen.getByLabelText(/Who's the lucky person/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Your name/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Their Name/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Your Name/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Create Valentine/i })).toBeInTheDocument();
   });
 
@@ -52,7 +52,7 @@ describe('CreateValentinePage', () => {
 
     renderWithRouter(<CreateValentinePage />);
     
-    const receiverInput = screen.getByLabelText(/Who's the lucky person/i);
+    const receiverInput = screen.getByLabelText(/Their Name/i);
     await user.type(receiverInput, 'Jane');
     
     const submitButton = screen.getByRole('button', { name: /Create Valentine/i });
@@ -69,7 +69,7 @@ describe('CreateValentinePage', () => {
 
     renderWithRouter(<CreateValentinePage />);
     
-    const receiverInput = screen.getByLabelText(/Who's the lucky person/i);
+    const receiverInput = screen.getByLabelText(/Their Name/i);
     await user.type(receiverInput, 'Jane');
     
     const submitButton = screen.getByRole('button', { name: /Create Valentine/i });

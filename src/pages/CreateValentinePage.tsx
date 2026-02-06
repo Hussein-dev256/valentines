@@ -1,168 +1,117 @@
-import { useState, type FormEvent } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Footer from '../components/Footer';
+import GlassContainer from '../components/GlassContainer';
+import GlassInput from '../components/GlassInput';
+import RainingHearts from '../components/HeartParticles';
 import { createValentine } from '../services/valentine.service';
+import { trackEvent, EventTypes } from '../services/analytics.service';
 import { storeResultToken } from '../utils/resultTokenStorage';
-import { Footer } from '../components';
 
 export default function CreateValentinePage() {
-  const navigate = useNavigate();
-  const [receiverName, setReceiverName] = useState('');
-  const [senderName, setSenderName] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [showPrompt, setShowPrompt] = useState(false);
-  const [resultToken, setResultToken] = useState<string | null>(null);
+    const navigate = useNavigate();
+    const [senderName, setSenderName] = useState('');
+    const [receiverName, setReceiverName] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    setError(null);
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError('');
 
-    // Validate receiver name
-    const trimmedReceiverName = receiverName.trim();
-    if (!trimmedReceiverName) {
-      setError('Please enter the receiver\'s name');
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      const result = await createValentine(
-        senderName.trim() || null,
-        trimmedReceiverName
-      );
-
-      // Trigger share interface
-      if (navigator.share) {
-        try {
-          await navigator.share({
-            title: 'Will You Be My Valentine?',
-            text: `${trimmedReceiverName}, will you be my Valentine? 💕`,
-            url: result.public_url,
-          });
-        } catch (shareError) {
-          // User cancelled share or share failed, fallback to clipboard
-          if (shareError instanceof Error && shareError.name !== 'AbortError') {
-            await navigator.clipboard.writeText(result.public_url);
-            alert('Link copied to clipboard!');
-          }
+        if (!receiverName.trim()) {
+            setError('Please enter the receiver\'s name');
+            return;
         }
-      } else {
-        // Fallback to clipboard
-        await navigator.clipboard.writeText(result.public_url);
-        alert('Link copied to clipboard! Share it with your Valentine 💕');
-      }
 
-      // Store result token and show prompt
-      const token = result.result_url.split('/r/')[1];
-      
-      // Store token in localStorage for consistent access
-      storeResultToken(token, result.valentine_id, trimmedReceiverName);
-      
-      setResultToken(token);
-      setShowPrompt(true);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create Valentine. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+        setLoading(true);
 
-  // Show prompt after Valentine is created
-  if (showPrompt && resultToken) {
+        try {
+            const result = await createValentine(
+                senderName.trim() || null,
+                receiverName.trim()
+            );
+
+            // Store result token for later access
+            storeResultToken(
+                result.valentine_id,
+                result.result_url.split('/r/')[1],
+                receiverName.trim()
+            );
+
+            trackEvent(EventTypes.VALENTINE_CREATED, result.valentine_id);
+
+            // Navigate to prompt page
+            navigate(`/created/${result.valentine_id}`, {
+                state: {
+                    publicUrl: result.public_url,
+                    resultUrl: result.result_url,
+                },
+            });
+        } catch (err) {
+            console.error('Error creating valentine:', err);
+            setError('Failed to create Valentine. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-100 to-red-100 flex flex-col">
-        <main className="flex-1 flex items-center justify-center px-4">
-          <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full text-center">
-            <h1 className="text-3xl font-bold text-pink-600 mb-6">
-              Valentine Sent! 💌
-            </h1>
-            <p className="text-gray-700 mb-8 text-lg">
-              Your Valentine has been sent! Do you want to see if they've answered?
-            </p>
-            
-            <div className="space-y-4">
-              <button
-                onClick={() => navigate(`/r/${resultToken}`)}
-                className="w-full bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 px-8 rounded-full transition-colors duration-200"
-              >
-                Yes, show me! 👀
-              </button>
-              <button
-                onClick={() => navigate('/')}
-                className="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-3 px-8 rounded-full transition-colors duration-200"
-              >
-                Maybe later 😌
-              </button>
+        <>
+            <div className="liquid-gradient-bg" />
+            <RainingHearts />
+
+            <div className="scene-container">
+                <div className="content-center">
+                    <GlassContainer>
+                    <h1 className="text-h2 mb-8 fade-in-blur">
+                        Create Your Valentine 💘
+                    </h1>
+
+                    <form onSubmit={handleSubmit} className="w-full max-w-md space-y-6 fade-in" style={{ animationDelay: '0.2s' }}>
+                        <GlassInput
+                            type="text"
+                            id="senderName"
+                            name="senderName"
+                            value={senderName}
+                            onChange={(e) => setSenderName(e.target.value)}
+                            placeholder="Anonymous"
+                            label="Your Name (Optional)"
+                        />
+
+                        <GlassInput
+                            type="text"
+                            id="receiverName"
+                            name="receiverName"
+                            value={receiverName}
+                            onChange={(e) => setReceiverName(e.target.value)}
+                            placeholder="Enter their name"
+                            label="Their Name"
+                            required
+                            error={error}
+                        />
+
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="btn-primary w-full"
+                        >
+                            {loading ? 'Creating...' : 'Create Valentine'}
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={() => navigate('/')}
+                            className="btn-secondary w-full"
+                        >
+                            Cancel
+                        </button>
+                    </form>
+                </GlassContainer>
+                </div>
+
+                <Footer />
             </div>
-          </div>
-        </main>
-        
-        <Footer />
-      </div>
+        </>
     );
-  }
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-100 to-red-100 flex flex-col">
-      <main className="flex-1 flex items-center justify-center px-4">
-        <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full">
-          <h1 className="text-3xl font-bold text-pink-600 mb-6 text-center">
-            Create Your Valentine 💌
-          </h1>
-          
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label htmlFor="receiverName" className="block text-gray-700 font-semibold mb-2">
-                Who's the lucky person? *
-              </label>
-              <input
-                type="text"
-                id="receiverName"
-                name="receiverName"
-                value={receiverName}
-                onChange={(e) => setReceiverName(e.target.value)}
-                placeholder="Their name"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
-                required
-                disabled={isSubmitting}
-              />
-            </div>
-            
-            <div>
-              <label htmlFor="senderName" className="block text-gray-700 font-semibold mb-2">
-                Your name (optional but encouraged)
-              </label>
-              <input
-                type="text"
-                id="senderName"
-                name="senderName"
-                value={senderName}
-                onChange={(e) => setSenderName(e.target.value)}
-                placeholder="Leave blank to stay mysterious"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
-                disabled={isSubmitting}
-              />
-            </div>
-
-            {error && (
-              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-                {error}
-              </div>
-            )}
-            
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 px-6 rounded-full transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSubmitting ? 'Creating...' : 'Ask them out 😈💌'}
-            </button>
-          </form>
-        </div>
-      </main>
-      
-      <Footer />
-    </div>
-  );
 }

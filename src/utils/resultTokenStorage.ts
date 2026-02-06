@@ -5,7 +5,7 @@
 
 const STORAGE_KEY = 'valentine_result_tokens';
 
-interface StoredToken {
+export interface StoredToken {
   token: string;
   valentineId: string;
   createdAt: string;

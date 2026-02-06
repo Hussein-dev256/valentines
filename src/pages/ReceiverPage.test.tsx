@@ -15,7 +15,8 @@ vi.mock('../services/analytics.service', () => ({
   },
 }));
 
-const renderWithRouter = () => {
+const renderWithRouter = (valentineId: string = 'test-id') => {
+  window.history.pushState({}, 'Test page', `/v/${valentineId}`);
   return render(
     <BrowserRouter>
       <Routes>
@@ -40,8 +41,11 @@ describe('ReceiverPage', () => {
     renderWithRouter();
     
     await waitFor(() => {
-      expect(screen.getByText(/Jane, Will You Be My Valentine/i)).toBeInTheDocument();
-      expect(screen.getByText(/From: John/i)).toBeInTheDocument();
+      expect(screen.getByText(/Jane,/i)).toBeInTheDocument();
+      expect(screen.getByText(/WILL YOU BE MY/i)).toBeInTheDocument();
+      expect(screen.getByText(/VALENTINE\?/i)).toBeInTheDocument();
+      expect(screen.getByText(/From:/i)).toBeInTheDocument();
+      expect(screen.getByText(/John/i)).toBeInTheDocument();
     });
   });
 
@@ -55,8 +59,10 @@ describe('ReceiverPage', () => {
     renderWithRouter();
     
     await waitFor(() => {
-      expect(screen.getByText(/Jane, Will You Be My Valentine/i)).toBeInTheDocument();
-      expect(screen.getByText(/From: Someone/i)).toBeInTheDocument();
+      expect(screen.getByText(/Jane,/i)).toBeInTheDocument();
+      expect(screen.getByText(/WILL YOU BE MY/i)).toBeInTheDocument();
+      expect(screen.getByText(/VALENTINE\?/i)).toBeInTheDocument();
+      expect(screen.getByText(/From:/i)).toBeInTheDocument();
     });
   });
 
@@ -73,7 +79,7 @@ describe('ReceiverPage', () => {
     renderWithRouter();
     
     await waitFor(() => {
-      expect(screen.getByText(/Jane, Will You Be My Valentine/i)).toBeInTheDocument();
+      expect(screen.getByText(/Jane,/i)).toBeInTheDocument();
     });
 
     const yesButton = screen.getByRole('button', { name: /YES!/i });
@@ -96,14 +102,14 @@ describe('ReceiverPage', () => {
     renderWithRouter();
     
     await waitFor(() => {
-      expect(screen.getByText(/Jane, Will You Be My Valentine/i)).toBeInTheDocument();
+      expect(screen.getByText(/Jane,/i)).toBeInTheDocument();
     });
 
     const yesButton = screen.getByRole('button', { name: /YES!/i });
     await user.click(yesButton);
     
     await waitFor(() => {
-      expect(screen.getByText(/Yay!/i)).toBeInTheDocument();
+      expect(screen.getByText(/AYYYYY/i)).toBeInTheDocument();
     });
   });
 
@@ -119,14 +125,14 @@ describe('ReceiverPage', () => {
     renderWithRouter();
     
     await waitFor(() => {
-      expect(screen.getByText(/Jane, Will You Be My Valentine/i)).toBeInTheDocument();
+      expect(screen.getByText(/Jane,/i)).toBeInTheDocument();
     });
 
     const noButton = screen.getByRole('button', { name: /NO/i });
     await user.click(noButton);
     
     await waitFor(() => {
-      expect(screen.getByText(/All good!/i)).toBeInTheDocument();
+      expect(screen.getByText(/Ouuchh, noted/i)).toBeInTheDocument();
     });
   });
 

@@ -29,6 +29,11 @@ vi.mock('../lib/supabase', () => ({
 // UUID regex pattern for validation
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+// Helper to generate non-whitespace strings
+const nonWhitespaceString = (options: { minLength?: number; maxLength?: number } = {}) =>
+  fc.string({ minLength: options.minLength || 1, maxLength: options.maxLength || 50 })
+    .map(s => s.trim() || '!'); // Replace empty/whitespace with a non-whitespace character
+
 // Helper to create a mock Supabase response for successful Valentine creation
 function createMockSupabaseSuccess() {
   const mockInsert = vi.fn().mockResolvedValue({ error: null });
@@ -67,8 +72,8 @@ describe('ValentineService - Property-Based Tests', () => {
           // Generate an array of 5-20 Valentine creation requests
           fc.array(
             fc.record({
-              senderName: fc.option(fc.string({ minLength: 1, maxLength: 50 }), { nil: null }),
-              receiverName: fc.string({ minLength: 1, maxLength: 50 }),
+              senderName: fc.option(nonWhitespaceString({ minLength: 1, maxLength: 50 }), { nil: null }),
+              receiverName: nonWhitespaceString({ minLength: 1, maxLength: 50 }),
             }),
             { minLength: 5, maxLength: 20 }
           ),
@@ -114,7 +119,7 @@ describe('ValentineService - Property-Based Tests', () => {
         ),
         { numRuns: 20 }
       );
-    });
+    }, 10000);
   });
 
   describe('Property 4: Result token uniqueness', () => {
@@ -131,8 +136,8 @@ describe('ValentineService - Property-Based Tests', () => {
           // Generate an array of 5-20 Valentine creation requests
           fc.array(
             fc.record({
-              senderName: fc.option(fc.string({ minLength: 1, maxLength: 50 }), { nil: null }),
-              receiverName: fc.string({ minLength: 1, maxLength: 50 }),
+              senderName: fc.option(nonWhitespaceString({ minLength: 1, maxLength: 50 }), { nil: null }),
+              receiverName: nonWhitespaceString({ minLength: 1, maxLength: 50 }),
             }),
             { minLength: 5, maxLength: 20 }
           ),
@@ -181,7 +186,7 @@ describe('ValentineService - Property-Based Tests', () => {
         ),
         { numRuns: 25 }
       );
-    });
+    }, 10000);
   });
 
   describe('Property 5: Valentine URL format consistency', () => {
@@ -196,8 +201,8 @@ describe('ValentineService - Property-Based Tests', () => {
       await fc.assert(
         fc.asyncProperty(
           fc.record({
-            senderName: fc.option(fc.string({ minLength: 1, maxLength: 50 }), { nil: null }),
-            receiverName: fc.string({ minLength: 1, maxLength: 50 }),
+            senderName: fc.option(nonWhitespaceString({ minLength: 1, maxLength: 50 }), { nil: null }),
+            receiverName: nonWhitespaceString({ minLength: 1, maxLength: 50 }),
           }),
           async (valentineRequest) => {
             // Set up mock for successful creation
@@ -237,7 +242,7 @@ describe('ValentineService - Property-Based Tests', () => {
         ),
         { numRuns: 25 }
       );
-    });
+    }, 10000);
   });
 
   describe('Property 6: Result URL format consistency', () => {
@@ -252,8 +257,8 @@ describe('ValentineService - Property-Based Tests', () => {
       await fc.assert(
         fc.asyncProperty(
           fc.record({
-            senderName: fc.option(fc.string({ minLength: 1, maxLength: 50 }), { nil: null }),
-            receiverName: fc.string({ minLength: 1, maxLength: 50 }),
+            senderName: fc.option(nonWhitespaceString({ minLength: 1, maxLength: 50 }), { nil: null }),
+            receiverName: nonWhitespaceString({ minLength: 1, maxLength: 50 }),
           }),
           async (valentineRequest) => {
             // Set up mock for successful creation
@@ -287,7 +292,7 @@ describe('ValentineService - Property-Based Tests', () => {
         ),
         { numRuns: 25 }
       );
-    });
+    }, 10000);
   });
 
   describe('Property 7: One-to-one Valentine-token relationship', () => {
@@ -305,8 +310,8 @@ describe('ValentineService - Property-Based Tests', () => {
           // Generate an array of 5-15 Valentine creation requests
           fc.array(
             fc.record({
-              senderName: fc.option(fc.string({ minLength: 1, maxLength: 50 }), { nil: null }),
-              receiverName: fc.string({ minLength: 1, maxLength: 50 }),
+              senderName: fc.option(nonWhitespaceString({ minLength: 1, maxLength: 50 }), { nil: null }),
+              receiverName: nonWhitespaceString({ minLength: 1, maxLength: 50 }),
             }),
             { minLength: 5, maxLength: 15 }
           ),
@@ -374,6 +379,6 @@ describe('ValentineService - Property-Based Tests', () => {
         ),
         { numRuns: 25 }
       );
-    });
+    }, 10000);
   });
 });

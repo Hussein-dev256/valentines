@@ -35,7 +35,7 @@ describe('Valentine Creation Property Tests', () => {
   it('Property 3: Valentine IDs are globally unique', async () => {
     await fc.assert(
       fc.asyncProperty(
-        fc.array(fc.tuple(fc.string({ minLength: 1 }), fc.option(fc.string(), { nil: null })), { minLength: 2, maxLength: 10 }),
+        fc.array(fc.tuple(fc.string({ minLength: 1 }).filter(s => s.trim().length > 0), fc.option(fc.string().filter(s => s.trim().length > 0), { nil: null })), { minLength: 2, maxLength: 10 }),
         async (valentineData) => {
           const results = await Promise.all(
             valentineData.map(([receiverName, senderName]) =>
@@ -62,7 +62,7 @@ describe('Valentine Creation Property Tests', () => {
   it('Property 4: Result tokens are globally unique', async () => {
     await fc.assert(
       fc.asyncProperty(
-        fc.array(fc.tuple(fc.string({ minLength: 1 }), fc.option(fc.string(), { nil: null })), { minLength: 2, maxLength: 10 }),
+        fc.array(fc.tuple(fc.string({ minLength: 1 }).filter(s => s.trim().length > 0), fc.option(fc.string().filter(s => s.trim().length > 0), { nil: null })), { minLength: 2, maxLength: 10 }),
         async (valentineData) => {
           const results = await Promise.all(
             valentineData.map(([receiverName, senderName]) =>
@@ -90,8 +90,8 @@ describe('Valentine Creation Property Tests', () => {
   it('Property 5: Valentine URLs follow consistent format', async () => {
     await fc.assert(
       fc.asyncProperty(
-        fc.string({ minLength: 1 }),
-        fc.option(fc.string(), { nil: null }),
+        fc.string({ minLength: 1 }).filter(s => s.trim().length > 0),
+        fc.option(fc.string().filter(s => s.trim().length > 0), { nil: null }),
         async (receiverName, senderName) => {
           const result = await createValentine(senderName, receiverName);
 
@@ -116,8 +116,8 @@ describe('Valentine Creation Property Tests', () => {
   it('Property 6: Result URLs follow consistent format', async () => {
     await fc.assert(
       fc.asyncProperty(
-        fc.string({ minLength: 1 }),
-        fc.option(fc.string(), { nil: null }),
+        fc.string({ minLength: 1 }).filter(s => s.trim().length > 0),
+        fc.option(fc.string().filter(s => s.trim().length > 0), { nil: null }),
         async (receiverName, senderName) => {
           const result = await createValentine(senderName, receiverName);
 
@@ -143,8 +143,8 @@ describe('Valentine Creation Property Tests', () => {
   it('Property 7: One-to-one Valentine-token relationship', async () => {
     await fc.assert(
       fc.asyncProperty(
-        fc.string({ minLength: 1 }),
-        fc.option(fc.string(), { nil: null }),
+        fc.string({ minLength: 1 }).filter(s => s.trim().length > 0),
+        fc.option(fc.string().filter(s => s.trim().length > 0), { nil: null }),
         async (receiverName, senderName) => {
           const result = await createValentine(senderName, receiverName);
 

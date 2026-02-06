@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
-import { BrowserRouter } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import userEvent from '@testing-library/user-event';
 import ResultsPage from './ResultsPage';
 import * as valentineService from '../services/valentine.service';
@@ -13,8 +13,15 @@ vi.mock('../services/analytics.service', () => ({
   },
 }));
 
-const renderWithRouter = (component: React.ReactElement) => {
-  return render(<BrowserRouter>{component}</BrowserRouter>);
+const renderWithRouter = (component: React.ReactElement, token: string = 'test-token') => {
+  window.history.pushState({}, 'Test page', `/r/${token}`);
+  return render(
+    <BrowserRouter>
+      <Routes>
+        <Route path="/r/:token" element={component} />
+      </Routes>
+    </BrowserRouter>
+  );
 };
 
 describe('ResultsPage', () => {

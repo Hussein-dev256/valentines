@@ -29,7 +29,7 @@ export async function createValentine(
   receiverName: string
 ): Promise<CreateValentineResponse> {
   // Validate receiver name
-  if (!receiverName || receiverName.trim().length === 0) {
+  if (!receiverName || !receiverName.trim() || receiverName.trim().length === 0) {
     throw new ApiError('Receiver name is required');
   }
 

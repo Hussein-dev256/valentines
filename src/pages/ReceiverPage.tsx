@@ -1,224 +1,192 @@
-import { useEffect, useState, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
+import Footer from '../components/Footer';
+import GlassContainer from '../components/GlassContainer';
+import GlossyHeart from '../components/GlossyHeart';
+import RainingHearts from '../components/HeartParticles';
 import { getValentine, submitAnswer } from '../services/valentine.service';
 import { trackEvent, EventTypes } from '../services/analytics.service';
-import { DodgingButton, Footer } from '../components';
 import { celebrateYes } from '../utils/confetti';
-import type { GetValentineResponse } from '../types/database.types';
 
 export default function ReceiverPage() {
-  const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
-  const [valentine, setValentine] = useState<GetValentineResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [hasAnswered, setHasAnswered] = useState(false);
-  const [answer, setAnswer] = useState<'yes' | 'no' | null>(null);
-  const [buttonsSwapped, setButtonsSwapped] = useState(false);
-  const yesButtonRef = useRef<HTMLButtonElement>(null);
+    const { id } = useParams<{ id: string }>();
+    const [valentine, setValentine] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+    const [answered, setAnswered] = useState(false);
+    const [answer, setAnswer] = useState<'yes' | 'no' | null>(null);
 
-  useEffect(() => {
-    const fetchValentine = async () => {
-      if (!id) {
-        setError('Invalid Valentine link');
-        setLoading(false);
-        return;
-      }
+    useEffect(() => {
+        loadValentine();
+    }, [id]);
 
-      // RECEIVER PAGE: Always show the question page
-      // Senders should use the /r/{token} link to see results, not /v/{id}
-      try {
-        const data = await getValentine(id);
-        setValentine(data);
-        
-        // Check if already answered
-        if (data.status !== 'pending') {
-          setHasAnswered(true);
-          setAnswer(data.status === 'yes' ? 'yes' : 'no');
+    const loadValentine = async () => {
+        if (!id) return;
+
+        try {
+            const data = await getValentine(id);
+            setValentine(data);
+
+            // Check if already answered
+            if (data.status !== 'pending') {
+                setAnswered(true);
+                setAnswer(data.status as 'yes' | 'no');
+            }
+
+            trackEvent(EventTypes.RECEIVER_OPENED, id);
+        } catch (error) {
+            console.error('Error loading valentine:', error);
+        } finally {
+            setLoading(false);
         }
-        
-        trackEvent(EventTypes.RECEIVER_OPENED, id);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load Valentine');
-      } finally {
-        setLoading(false);
-      }
     };
 
-    fetchValentine();
-  }, [id, navigate]);
+    const handleAnswer = async (response: 'yes' | 'no') => {
+        if (!id || answered) return;
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-100 to-red-100 flex items-center justify-center">
-        <div className="text-pink-600 text-xl">Loading...</div>
-      </div>
-    );
-  }
+        try {
+            await submitAnswer(id, response);
+            setAnswered(true);
+            setAnswer(response);
 
-  if (error || !valentine) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-100 to-red-100 flex flex-col">
-        <main className="flex-1 flex items-center justify-center px-4">
-          <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full text-center">
-            <h1 className="text-3xl font-bold text-red-600 mb-4">Oops!</h1>
-            <p className="text-gray-700 mb-6">{error || 'Valentine not found'}</p>
-          </div>
-        </main>
-      </div>
-    );
-  }
+            if (response === 'yes') {
+                celebrateYes();
+            }
 
-  const senderDisplay = valentine.sender_name || 'Someone';
+            trackEvent(
+                response === 'yes' ? EventTypes.ANSWERED_YES : EventTypes.ANSWERED_NO,
+                id
+            );
+        } catch (error) {
+            console.error('Error answering valentine:', error);
+        }
+    };
 
-  const handleAnswer = async (selectedAnswer: 'yes' | 'no') => {
-    if (!id || isSubmitting || hasAnswered) return;
-
-    setIsSubmitting(true);
-    setError(null);
-
-    try {
-      await submitAnswer(id, selectedAnswer);
-      setAnswer(selectedAnswer);
-      setHasAnswered(true);
-      
-      // Celebrate with confetti if YES! 🎉
-      if (selectedAnswer === 'yes') {
-        celebrateYes();
-      }
-      
-      // Track event
-      trackEvent(
-        selectedAnswer === 'yes' ? EventTypes.ANSWERED_YES : EventTypes.ANSWERED_NO,
-        id
-      );
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to submit answer. Please try again.');
-    } finally {
-      setIsSubmitting(false);
+    if (loading) {
+        return (
+            <>
+                <div className="liquid-gradient-bg" />
+                <RainingHearts />
+                <div className="scene-container">
+                    <div className="content-center">
+                        <GlassContainer>
+                            <p className="text-body-large">Loading...</p>
+                        </GlassContainer>
+                    </div>
+                </div>
+            </>
+        );
     }
-  };
 
-  const handleYesClick = () => handleAnswer('yes');
-  const handleNoClick = () => handleAnswer('no');
+    if (!valentine) {
+        return (
+            <>
+                <div className="liquid-gradient-bg" />
+                <RainingHearts />
+                <div className="scene-container">
+                    <div className="content-center">
+                        <GlassContainer>
+                            <h2 className="text-h2 mb-4">Valentine Not Found</h2>
+                            <p className="text-body">This Valentine doesn't exist or has been removed.</p>
+                        </GlassContainer>
+                    </div>
+                    <Footer />
+                </div>
+            </>
+        );
+    }
 
-  const handleSwapRequest = () => {
-    setButtonsSwapped(prev => !prev);
-    setTimeout(() => setButtonsSwapped(false), 1000);
-  };
+    if (answered) {
+        return (
+            <>
+                <div className="liquid-gradient-bg" />
+                <RainingHearts />
+                <div className="scene-container">
+                    <div className="content-center">
+                        <GlassContainer>
+                            {answer === 'yes' ? (
+                                <>
+                                    <h1 className="text-hero mb-8 fade-in-blur">
+                                        AYYYYY 😍💃🕺
+                                    </h1>
+                                    <p className="text-body-large mb-12 fade-in" style={{ animationDelay: '0.2s' }}>
+                                        You just made someone very happy 💖
+                                    </p>
+                                </>
+                            ) : (
+                                <>
+                                    <h1 className="text-hero mb-8 fade-in-blur">
+                                        Ouuchh, noted 😌
+                                    </h1>
+                                    <p className="text-body-large mb-12 fade-in" style={{ animationDelay: '0.2s' }}>
+                                        Not your type? Ask out your type...
+                                    </p>
+                                </>
+                            )}
+                            
+                            <button
+                                onClick={() => window.location.href = '/create'}
+                                className="btn-primary fade-in"
+                                style={{ animationDelay: '0.4s' }}
+                            >
+                                Ask someone out
+                            </button>
+                        </GlassContainer>
+                    </div>
+                    <Footer />
+                </div>
+            </>
+        );
+    }
 
-  // Show feedback screen after answering
-  if (hasAnswered && answer) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-100 to-red-100 flex flex-col">
-        <main className="flex-1 flex items-center justify-center px-4">
-          <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full text-center">
-            {answer === 'yes' ? (
-              <>
-                <h1 className="text-4xl font-bold text-green-600 mb-6">
-                  AYYYYY 😍💃🕺
-                </h1>
-                <p className="text-gray-700 mb-8 text-lg">
-                  You just made someone very happy 💖
-                </p>
-                <button
-                  onClick={() => navigate('/create')}
-                  className="bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 px-8 rounded-full transition-colors duration-200"
-                >
-                  Ask another person out 💌, I won't spill I promise 😉
-                </button>
-              </>
-            ) : (
-              <>
-                <h1 className="text-3xl font-bold text-gray-700 mb-6">
-                  Ouuchh, noted 😌
-                </h1>
-                <p className="text-gray-700 mb-8 text-lg">
-                  Not your type? Ask out your type...
-                </p>
-                <button
-                  onClick={() => navigate('/create')}
-                  className="bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 px-8 rounded-full transition-colors duration-200"
-                >
-                  Ask another person out 💌
-                </button>
-              </>
-            )}
-          </div>
-        </main>
-        
-        <Footer />
-      </div>
-    );
-  }
+        <>
+            <div className="liquid-gradient-bg" />
+            <RainingHearts />
+            
+            <div className="scene-container">
+                <div className="content-center">
+                    <GlassContainer>
+                        {/* Receiver name */}
+                        <h2 className="text-h2 mb-4 fade-in">
+                            {valentine.receiver_name},
+                        </h2>
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-100 to-red-100 flex flex-col">
-      <main className="flex-1 flex items-center justify-center px-4">
-        <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full text-center">
-          <h1 className="text-3xl font-bold text-pink-600 mb-6">
-            {valentine.receiver_name}, Will You Be My Valentine? 💕
-          </h1>
-          <p className="text-gray-700 mb-8 text-lg">
-            From: {senderDisplay}
-          </p>
+                        {/* Main question with glossy heart */}
+                        <h1 className="text-valentine-iconic mb-2 fade-in-blur" style={{ animationDelay: '0.2s' }}>
+                            WILL Y<GlossyHeart />U
+                        </h1>
+                        <h1 className="text-valentine-iconic mb-2 fade-in-blur" style={{ animationDelay: '0.3s' }}>
+                            BE MY
+                        </h1>
+                        <h1 className="text-valentine-iconic mb-8 fade-in-blur" style={{ animationDelay: '0.4s' }}>
+                            VALENTINE?
+                        </h1>
 
-          {error && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-              {error}
+                        {/* From sender */}
+                        <p className="text-body-large mb-8 fade-in" style={{ animationDelay: '0.6s' }}>
+                            From: <strong>{valentine.sender_name}</strong>
+                        </p>
+
+                        {/* Action buttons */}
+                        <div className="flex flex-col sm:flex-row gap-4 justify-center fade-in" style={{ animationDelay: '0.8s' }}>
+                            <button
+                                onClick={() => handleAnswer('yes')}
+                                className="btn-primary"
+                            >
+                                YES! 💖
+                            </button>
+                            <button
+                                onClick={() => handleAnswer('no')}
+                                className="btn-secondary"
+                            >
+                                NO
+                            </button>
+                        </div>
+                    </GlassContainer>
+                </div>
+
+                <Footer />
             </div>
-          )}
-          
-          <div className="flex flex-col items-center gap-4">
-            {!buttonsSwapped ? (
-              <>
-                <button
-                  ref={yesButtonRef}
-                  onClick={handleYesClick}
-                  disabled={isSubmitting}
-                  className="w-64 bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-8 rounded-full transition-all duration-400 disabled:opacity-50 disabled:cursor-not-allowed text-lg"
-                >
-                  {isSubmitting ? 'Submitting...' : 'YES 😍'}
-                </button>
-                
-                <DodgingButton
-                  onClick={handleNoClick}
-                  dodgeDuration={Math.floor(Math.random() * 11) + 15} // Random 15-25 seconds
-                  yesButtonRef={yesButtonRef}
-                  onSwapRequest={handleSwapRequest}
-                  className="w-64 bg-gray-300 hover:bg-gray-400 text-gray-700 font-bold py-4 px-8 rounded-full text-lg"
-                >
-                  NO 🙃
-                </DodgingButton>
-              </>
-            ) : (
-              <>
-                <DodgingButton
-                  onClick={handleNoClick}
-                  dodgeDuration={Math.floor(Math.random() * 11) + 15} // Random 15-25 seconds
-                  yesButtonRef={yesButtonRef}
-                  onSwapRequest={handleSwapRequest}
-                  className="w-64 bg-gray-300 hover:bg-gray-400 text-gray-700 font-bold py-4 px-8 rounded-full text-lg"
-                >
-                  NO 🙃
-                </DodgingButton>
-                
-                <button
-                  ref={yesButtonRef}
-                  onClick={handleYesClick}
-                  disabled={isSubmitting}
-                  className="w-64 bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-8 rounded-full transition-all duration-400 disabled:opacity-50 disabled:cursor-not-allowed text-lg"
-                >
-                  {isSubmitting ? 'Submitting...' : 'YES 😍'}
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-      </main>
-      
-      <Footer />
-    </div>
-  );
+        </>
+    );
 }

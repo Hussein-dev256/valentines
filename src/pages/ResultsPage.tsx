@@ -1,176 +1,165 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import Footer from '../components/Footer';
+import GlassContainer from '../components/GlassContainer';
+import RainingHearts from '../components/HeartParticles';
 import { getResult } from '../services/valentine.service';
 import { trackEvent, EventTypes } from '../services/analytics.service';
-import { Footer } from '../components';
 import { celebrateYes } from '../utils/confetti';
-import type { GetResultResponse } from '../types/database.types';
 
 export default function ResultsPage() {
-  const { token } = useParams<{ token: string }>();
-  const navigate = useNavigate();
-  const [result, setResult] = useState<GetResultResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [showWarning, setShowWarning] = useState(true);
+    const { token } = useParams<{ token: string }>();
+    const navigate = useNavigate();
+    const [result, setResult] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+    const [revealed, setRevealed] = useState(false);
 
-  useEffect(() => {
-    const fetchResult = async () => {
-      if (!token) {
-        setError('Invalid result link');
-        setLoading(false);
-        return;
-      }
+    useEffect(() => {
+        loadResult();
+    }, [token]);
 
-      try {
-        const data = await getResult(token);
-        setResult(data);
-        trackEvent(EventTypes.RESULT_VIEWED);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load result');
-      } finally {
-        setLoading(false);
-      }
+    const loadResult = async () => {
+        if (!token) return;
+
+        try {
+            const data = await getResult(token);
+            setResult(data);
+            trackEvent(EventTypes.RESULT_VIEWED, undefined, { token });
+        } catch (error) {
+            console.error('Error loading result:', error);
+            setResult(null);
+        } finally {
+            setLoading(false);
+        }
     };
 
-    fetchResult();
-  }, [token]);
+    const handleReveal = () => {
+        setRevealed(true);
+        if (result?.status === 'yes') {
+            celebrateYes();
+        }
+    };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-100 to-red-100 flex items-center justify-center">
-        <div className="text-pink-600 text-xl">Loading...</div>
-      </div>
-    );
-  }
+    if (loading) {
+        return (
+            <>
+                <div className="liquid-gradient-bg" />
+                <RainingHearts />
+                <div className="scene-container">
+                    <div className="content-center">
+                        <GlassContainer>
+                            <p className="text-body-large">Loading...</p>
+                        </GlassContainer>
+                    </div>
+                </div>
+            </>
+        );
+    }
 
-  if (error || !result) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-100 to-red-100 flex flex-col">
-        <main className="flex-1 flex items-center justify-center px-4">
-          <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full text-center">
-            <h1 className="text-3xl font-bold text-red-600 mb-4">Oops!</h1>
-            <p className="text-gray-700 mb-6">{error || 'Result not found'}</p>
-            <button
-              onClick={() => navigate('/')}
-              className="bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 px-8 rounded-full transition-colors duration-200"
-            >
-              Go Home
-            </button>
-          </div>
-        </main>
-      </div>
-    );
-  }
+    if (!result) {
+        return (
+            <>
+                <div className="liquid-gradient-bg" />
+                <RainingHearts />
+                <div className="scene-container">
+                    <div className="content-center">
+                        <GlassContainer>
+                            <h2 className="text-h2 mb-4">Invalid result token</h2>
+                            <p className="text-body mb-8">This result link is invalid or has expired.</p>
+                            <button onClick={() => navigate('/')} className="btn-primary">
+                                Go Home
+                            </button>
+                        </GlassContainer>
+                    </div>
+                    <Footer />
+                </div>
+            </>
+        );
+    }
 
-  // Show warning screen before revealing result
-  if (showWarning) {
+    if (result.status === 'pending') {
+        return (
+            <>
+                <div className="liquid-gradient-bg" />
+                <RainingHearts />
+                <div className="scene-container">
+                    <div className="content-center">
+                        <GlassContainer>
+                            <h1 className="text-hero mb-8 fade-in-blur">
+                                Still Waiting... ⏳
+                            </h1>
+                            <p className="text-body-large mb-12 fade-in" style={{ animationDelay: '0.2s' }}>
+                                They haven't answered yet. Check back later!
+                            </p>
+                            <button onClick={() => navigate('/')} className="btn-primary fade-in" style={{ animationDelay: '0.4s' }}>
+                                Go Home
+                            </button>
+                        </GlassContainer>
+                    </div>
+                    <Footer />
+                </div>
+            </>
+        );
+    }
+
+    if (!revealed) {
+        return (
+            <>
+                <div className="liquid-gradient-bg" />
+                <RainingHearts />
+                <div className="scene-container">
+                    <div className="content-center">
+                        <GlassContainer>
+                            <h1 className="text-hero mb-8 fade-in-blur">
+                                The Moment of Truth 👀
+                            </h1>
+                            <p className="text-body-large mb-12 fade-in" style={{ animationDelay: '0.2s' }}>
+                                Are you ready to see their response?
+                            </p>
+                            <button onClick={handleReveal} className="btn-primary fade-in" style={{ animationDelay: '0.4s' }}>
+                                Show Me The Result
+                            </button>
+                        </GlassContainer>
+                    </div>
+                    <Footer />
+                </div>
+            </>
+        );
+    }
+
     return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-100 to-red-100 flex flex-col">
-        <main className="flex-1 flex items-center justify-center px-4">
-          <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full text-center">
-            <h1 className="text-3xl font-bold text-pink-600 mb-6">
-              WAIT ✋😬
-            </h1>
-            <p className="text-gray-700 mb-8 text-lg">
-              Are you REALLY sure you wanna know?? 😭😂
-            </p>
-            
-            <div className="space-y-4">
-              <button
-                onClick={() => {
-                  setShowWarning(false);
-                  // Trigger confetti if result is YES
-                  if (result?.status === 'yes') {
-                    setTimeout(() => celebrateYes(), 500);
-                  }
-                }}
-                className="w-full bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 px-8 rounded-full transition-colors duration-200"
-              >
-                Yes… tell me 😭
-              </button>
-              <button
-                onClick={() => navigate('/')}
-                className="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-3 px-8 rounded-full transition-colors duration-200"
-              >
-                No no no 😅
-              </button>
+        <>
+            <div className="liquid-gradient-bg" />
+            <RainingHearts />
+            <div className="scene-container">
+                <div className="content-center">
+                    <GlassContainer>
+                    {result.status === 'yes' ? (
+                        <>
+                            <h1 className="text-hero mb-8 fade-in-blur">
+                                They Said YES! 🎉
+                            </h1>
+                            <p className="text-body-large mb-12 fade-in" style={{ animationDelay: '0.2s' }}>
+                                Congratulations! Time to plan that date 💖
+                            </p>
+                        </>
+                    ) : (
+                        <>
+                            <h1 className="text-hero mb-8 fade-in-blur">
+                                Not This Time 😔
+                            </h1>
+                            <p className="text-body-large mb-12 fade-in" style={{ animationDelay: '0.2s' }}>
+                                Don't worry, it takes courage to ask! There are plenty of fish in the sea 🐠
+                            </p>
+                        </>
+                    )}
+                    <button onClick={() => navigate('/create')} className="btn-primary fade-in" style={{ animationDelay: '0.4s' }}>
+                        Ask Someone Else
+                    </button>
+                </GlassContainer>
+                </div>
+                <Footer />
             </div>
-          </div>
-        </main>
-        
-        <Footer />
-      </div>
+        </>
     );
-  }
-
-  // Show result based on status
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-100 to-red-100 flex flex-col">
-      <main className="flex-1 flex items-center justify-center px-4">
-        <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full text-center">
-          {result.status === 'pending' && (
-            <>
-              <h1 className="text-3xl font-bold text-gray-700 mb-6">
-                Still Waiting... ⏳
-              </h1>
-              <p className="text-gray-700 mb-8 text-lg">
-                They haven't answered yet! Keep your fingers crossed 🤞
-              </p>
-              <p className="text-gray-600 mb-8 text-sm">
-                Check back later to see their response!
-              </p>
-            </>
-          )}
-
-          {result.status === 'yes' && (
-            <>
-              <h1 className="text-4xl font-bold text-green-600 mb-6">
-                GOOD NEWS 🎉💖
-              </h1>
-              <h2 className="text-3xl font-bold text-green-600 mb-6">
-                THEY SAID YESSS 😍😍
-              </h2>
-              <p className="text-gray-700 mb-8 text-lg italic">
-                Go and behave yourself now 😌
-              </p>
-            </>
-          )}
-
-          {result.status === 'no' && (
-            <>
-              <h1 className="text-3xl font-bold text-gray-700 mb-4">
-                Hmm… 😬😬
-              </h1>
-              <p className="text-gray-600 mb-6 text-lg italic">
-                This one hurts small sha…
-              </p>
-              <h2 className="text-3xl font-bold text-red-600 mb-6">
-                They said NO 😭💔
-              </h2>
-              <div className="my-8 border-t-2 border-gray-200"></div>
-              <h3 className="text-2xl font-bold text-gray-800 mb-4">
-                BUT HEY 😌
-              </h3>
-              <p className="text-gray-700 mb-4 text-lg">
-                Valentine plenty outside 😏
-              </p>
-              <p className="text-gray-700 mb-8 text-lg">
-                Go try again.
-              </p>
-            </>
-          )}
-          
-          <button
-            onClick={() => navigate('/create')}
-            className="bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 px-8 rounded-full transition-colors duration-200"
-          >
-            Ask another person out 💘
-          </button>
-        </div>
-      </main>
-      
-      <Footer />
-    </div>
-  );
 }
