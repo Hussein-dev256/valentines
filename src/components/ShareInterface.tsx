@@ -89,37 +89,26 @@ export default function ShareInterface({
 
   return (
     <div className="w-full space-y-6">
-      {/* Personalized Clickable Link - NO RAW URL */}
+      {/* Personalized Preview Text - NOT CLICKABLE */}
       <div className="text-center fade-in" style={{ animationDelay: '0.1s' }}>
-        <a
-          href={url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="valentine-link"
+        <div
+          className="valentine-link-preview"
           style={{
             textDecoration: 'none',
             fontWeight: '500',
             fontSize: 'clamp(15px, 2.5vh, 18px)',
             color: 'rgba(0, 0, 0, 0.85)',
-            cursor: 'pointer',
+            cursor: 'default',
             display: 'inline-block',
             padding: 'clamp(12px, 2vh, 16px) clamp(20px, 3.5vw, 28px)',
             background: 'rgba(236, 72, 153, 0.08)',
             border: '1px solid rgba(236, 72, 153, 0.2)',
             borderRadius: '12px',
-            transition: 'all 300ms ease',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.opacity = '0.8';
-            e.currentTarget.style.transform = 'translateY(-2px)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.opacity = '1';
-            e.currentTarget.style.transform = 'translateY(0)';
+            userSelect: 'none',
           }}
         >
           {getLinkText()}
-        </a>
+        </div>
         <p 
           className="text-body-small mt-3" 
           style={{ 
@@ -127,7 +116,7 @@ export default function ShareInterface({
             fontStyle: 'italic'
           }}
         >
-          Click to preview • Share to send
+          This is how they'll see it • Use Share button to send
         </p>
       </div>
       

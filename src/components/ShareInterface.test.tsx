@@ -83,18 +83,14 @@ describe('ShareInterface', () => {
   it('displays personalized link text when receiver name is provided', async () => {
     render(<ShareInterface url="http://localhost/v/test-id" receiverName="Kenya" />);
     
-    // Should display personalized anchor link
-    const link = screen.getByRole('link', { name: /Kenya, will you be my Valentine\? 💖/i });
-    expect(link).toBeInTheDocument();
-    expect(link).toHaveAttribute('href', 'http://localhost/v/test-id');
+    // Should display personalized preview text (not clickable)
+    expect(screen.getByText(/Kenya, will you be my Valentine\? 💖/i)).toBeInTheDocument();
   });
 
   it('displays generic link text when no receiver name is provided', async () => {
     render(<ShareInterface url="http://localhost/v/test-id" />);
     
-    // Should display generic anchor link
-    const link = screen.getByRole('link', { name: /Click here to open your Valentine 💖/i });
-    expect(link).toBeInTheDocument();
-    expect(link).toHaveAttribute('href', 'http://localhost/v/test-id');
+    // Should display generic preview text (not clickable)
+    expect(screen.getByText(/Click here to open your Valentine 💖/i)).toBeInTheDocument();
   });
 });
