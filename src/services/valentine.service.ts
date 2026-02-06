@@ -246,8 +246,12 @@ export async function validateSenderAccess(valentineId: string): Promise<boolean
   try {
     const localSenderId = getSenderId();
     
+    console.log('[validateSenderAccess] Valentine ID:', valentineId);
+    console.log('[validateSenderAccess] Local sender ID:', localSenderId);
+    
     // If no local sender ID, user is not the sender
     if (!localSenderId) {
+      console.log('[validateSenderAccess] No local sender ID, user is NOT sender');
       return false;
     }
 
@@ -259,8 +263,12 @@ export async function validateSenderAccess(valentineId: string): Promise<boolean
       .single();
 
     if (error || !data) {
+      console.log('[validateSenderAccess] Error fetching valentine or no data:', error);
       return false;
     }
+
+    console.log('[validateSenderAccess] Valentine sender ID from DB:', data.sender_id);
+    console.log('[validateSenderAccess] Match?', data.sender_id === localSenderId);
 
     // Compare local sender ID with database sender ID
     return data.sender_id === localSenderId;

@@ -32,24 +32,33 @@ export default function ReceiverPage() {
             // Same link, different behavior: sender → results, receiver → answering page
             const isSender = await validateSenderAccess(id);
             
+            console.log('[ReceiverPage] Valentine ID:', id);
+            console.log('[ReceiverPage] Is sender?', isSender);
+            
             if (isSender) {
                 // Sender clicks same link → redirect to results page
+                console.log('[ReceiverPage] User is sender, fetching result token...');
+                
                 // First try localStorage (fast path)
                 let resultToken = getResultTokenByValentineId(id);
+                console.log('[ReceiverPage] Result token from localStorage:', resultToken);
                 
                 // If not in localStorage, fetch from database (incognito/different device)
                 if (!resultToken) {
+                    console.log('[ReceiverPage] Fetching result token from database...');
                     resultToken = await getResultTokenFromDatabase(id);
+                    console.log('[ReceiverPage] Result token from database:', resultToken);
                 }
                 
                 if (resultToken) {
                     // Redirect to results page with the token
+                    console.log('[ReceiverPage] Redirecting to results page:', `/r/${resultToken}`);
                     navigate(`/r/${resultToken}`, { replace: true });
                     return;
                 } else {
                     // This should never happen (every valentine has a result token)
                     // But handle gracefully just in case
-                    console.error('Result token not found for valentine:', id);
+                    console.error('[ReceiverPage] Result token not found for valentine:', id);
                     setSenderBlocked(true);
                     setLoading(false);
                     return;
@@ -57,6 +66,7 @@ export default function ReceiverPage() {
             }
 
             // Not sender: show answering page (receiver flow)
+            console.log('[ReceiverPage] User is receiver, loading valentine data...');
             const data = await getValentine(id);
             setValentine(data);
 
