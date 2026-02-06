@@ -20,12 +20,23 @@ export default function ShareInterface({
 }: ShareInterfaceProps) {
   const [copied, setCopied] = useState(false);
 
+  // Sanitize receiver name
+  const safeName = receiverName?.trim() || '';
+
   // Create personalized share text
   const getShareText = () => {
-    if (receiverName) {
-      return `${receiverName}, will you be my Valentine? 💘`;
+    if (safeName) {
+      return `${safeName}, will you be my Valentine? 💘`;
     }
     return text || 'Will you be my Valentine? 💘';
+  };
+
+  // Create personalized link text
+  const getLinkText = () => {
+    if (safeName) {
+      return `${safeName}, will you be my Valentine? 💖`;
+    }
+    return 'Click here to open your Valentine 💖';
   };
 
   const handleShare = async () => {
@@ -73,81 +84,75 @@ export default function ShareInterface({
   };
 
   return (
-    <div className="w-full space-y-4">
-      {/* Share Button */}
+    <div className="w-full space-y-6">
+      {/* Personalized Clickable Link - NO RAW URL */}
+      <div className="text-center fade-in" style={{ animationDelay: '0.1s' }}>
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="valentine-link"
+          style={{
+            textDecoration: 'none',
+            fontWeight: '500',
+            fontSize: 'clamp(15px, 2.5vh, 18px)',
+            color: 'rgba(0, 0, 0, 0.85)',
+            cursor: 'pointer',
+            display: 'inline-block',
+            padding: 'clamp(12px, 2vh, 16px) clamp(20px, 3.5vw, 28px)',
+            background: 'rgba(236, 72, 153, 0.08)',
+            border: '1px solid rgba(236, 72, 153, 0.2)',
+            borderRadius: '12px',
+            transition: 'all 300ms ease',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.opacity = '0.8';
+            e.currentTarget.style.transform = 'translateY(-2px)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.opacity = '1';
+            e.currentTarget.style.transform = 'translateY(0)';
+          }}
+        >
+          {getLinkText()}
+        </a>
+        <p 
+          className="text-body-small mt-3" 
+          style={{ 
+            color: 'rgba(0, 0, 0, 0.45)',
+            fontStyle: 'italic'
+          }}
+        >
+          Click to preview • Share to send
+        </p>
+      </div>
+      
+      {/* PRIMARY CTA - Share Button */}
       <button
         onClick={handleShare}
-        className="btn-primary w-full"
+        className="btn-primary w-full fade-in"
+        style={{ animationDelay: '0.2s' }}
       >
         Share 💌
       </button>
       
-      {/* Copy Success Message */}
+      {/* Copy Success Toast - Minimal */}
       {copied && (
         <div 
           className="text-center fade-in"
           style={{ 
-            padding: 'clamp(12px, 2vh, 16px)',
-            background: 'rgba(16, 185, 129, 0.1)',
-            border: '1px solid rgba(16, 185, 129, 0.3)',
+            padding: 'clamp(10px, 1.8vh, 14px)',
+            background: 'rgba(16, 185, 129, 0.08)',
+            border: '1px solid rgba(16, 185, 129, 0.2)',
             borderRadius: '12px',
             color: 'rgba(16, 185, 129, 1)',
-            fontSize: 'clamp(13px, 2vh, 14px)',
+            fontSize: 'clamp(12px, 1.9vh, 14px)',
             fontWeight: '500'
           }}
         >
-          Link copied! 📋
+          Link copied 💕
         </div>
       )}
-      
-      {/* Copy Link Section */}
-      <div className="text-center">
-        <p className="text-body mb-3" style={{ color: 'rgba(0, 0, 0, 0.6)' }}>
-          Or copy the link:
-        </p>
-        
-        {/* Personalized message display */}
-        {receiverName && (
-          <div 
-            className="mb-3 p-3 rounded-lg"
-            style={{ 
-              background: 'rgba(236, 72, 153, 0.08)',
-              border: '1px solid rgba(236, 72, 153, 0.2)'
-            }}
-          >
-            <p className="text-body-large" style={{ color: 'rgba(0, 0, 0, 0.85)', fontWeight: '500' }}>
-              {receiverName}, will you be my Valentine? 💘
-            </p>
-            <p className="text-body-small mt-1" style={{ color: 'rgba(0, 0, 0, 0.5)' }}>
-              This is how they'll see it
-            </p>
-          </div>
-        )}
-        
-        <div className="flex gap-3">
-          <input
-            type="text"
-            value={url}
-            readOnly
-            className="solid-input flex-1 text-sm"
-            style={{ 
-              cursor: 'default',
-              userSelect: 'all'
-            }}
-          />
-          <button
-            onClick={handleCopyToClipboard}
-            className="btn-secondary"
-            style={{
-              minWidth: 'auto',
-              padding: 'clamp(12px, 2vh, 16px) clamp(20px, 3.5vw, 28px)',
-              whiteSpace: 'nowrap'
-            }}
-          >
-            Copy
-          </button>
-        </div>
-      </div>
     </div>
   );
 }

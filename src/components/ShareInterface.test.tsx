@@ -27,12 +27,12 @@ describe('ShareInterface', () => {
 
     render(<ShareInterface url="http://localhost/v/test-id" />);
     
-    const shareButton = screen.getByRole('button', { name: /Share Valentine Link/i });
+    const shareButton = screen.getByRole('button', { name: /Share 💌/i });
     await user.click(shareButton);
     
     expect(mockShare).toHaveBeenCalledWith({
       title: 'Will You Be My Valentine?',
-      text: 'Check out this Valentine!',
+      text: 'Will you be my Valentine? 💘',
       url: 'http://localhost/v/test-id',
     });
   });
@@ -53,7 +53,7 @@ describe('ShareInterface', () => {
 
     render(<ShareInterface url="http://localhost/v/test-id" />);
     
-    const shareButton = screen.getByRole('button', { name: /Share Valentine Link/i });
+    const shareButton = screen.getByRole('button', { name: /Share 💌/i });
     await user.click(shareButton);
     
     expect(mockWriteText).toHaveBeenCalledWith('http://localhost/v/test-id');
@@ -75,26 +75,27 @@ describe('ShareInterface', () => {
 
     render(<ShareInterface url="http://localhost/v/test-id" />);
     
-    const shareButton = screen.getByRole('button', { name: /Share Valentine Link/i });
+    const shareButton = screen.getByRole('button', { name: /Share 💌/i });
     await user.click(shareButton);
     
-    expect(await screen.findByText(/Link copied to clipboard!/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Link copied 💕/i)).toBeInTheDocument();
   });
 
-  it('allows manual copy via copy button', async () => {
-    const user = userEvent.setup();
-    const mockWriteText = vi.fn().mockResolvedValue(undefined);
+  it('displays personalized link text when receiver name is provided', async () => {
+    render(<ShareInterface url="http://localhost/v/test-id" receiverName="Kenya" />);
     
-    Object.defineProperty(navigator, 'clipboard', {
-      writable: true,
-      value: { writeText: mockWriteText },
-    });
+    // Should display personalized anchor link
+    const link = screen.getByRole('link', { name: /Kenya, will you be my Valentine\? 💖/i });
+    expect(link).toBeInTheDocument();
+    expect(link).toHaveAttribute('href', 'http://localhost/v/test-id');
+  });
 
+  it('displays generic link text when no receiver name is provided', async () => {
     render(<ShareInterface url="http://localhost/v/test-id" />);
     
-    const copyButton = screen.getByRole('button', { name: /Copy/i });
-    await user.click(copyButton);
-    
-    expect(mockWriteText).toHaveBeenCalledWith('http://localhost/v/test-id');
+    // Should display generic anchor link
+    const link = screen.getByRole('link', { name: /Click here to open your Valentine 💖/i });
+    expect(link).toBeInTheDocument();
+    expect(link).toHaveAttribute('href', 'http://localhost/v/test-id');
   });
 });
