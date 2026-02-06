@@ -106,7 +106,7 @@ export default function ReceiverPage() {
                         <GlassContainer>
                             {answer === 'yes' ? (
                                 <>
-                                    <h1 className="text-hero mb-8 fade-in-blur">
+                                    <h1 className="text-hero mb-8 fade-in-blur" style={{ whiteSpace: 'nowrap' }}>
                                         AYYYYY 😍💃🕺
                                     </h1>
                                     <p className="text-body-large mb-12 fade-in" style={{ animationDelay: '0.2s' }}>
@@ -115,7 +115,7 @@ export default function ReceiverPage() {
                                 </>
                             ) : (
                                 <>
-                                    <h1 className="text-hero mb-8 fade-in-blur">
+                                    <h1 className="text-hero mb-8 fade-in-blur" style={{ whiteSpace: 'nowrap' }}>
                                         Got it 😌
                                     </h1>
                                     <p className="text-body-large mb-12 fade-in" style={{ animationDelay: '0.2s' }}>
@@ -153,13 +153,15 @@ export default function ReceiverPage() {
                         </h2>
 
                         {/* Main question with glossy heart */}
-                        <h1 className="text-valentine-iconic mb-2 fade-in-blur" style={{ animationDelay: '0.2s' }}>
-                            WILL Y<GlossyHeart />U
-                        </h1>
-                        <h1 className="text-valentine-iconic mb-2 fade-in-blur" style={{ animationDelay: '0.3s' }}>
+                        <div style={{ whiteSpace: 'nowrap', overflow: 'visible' }}>
+                            <h1 className="text-valentine-iconic mb-2 fade-in-blur" style={{ animationDelay: '0.2s' }}>
+                                WILL Y<GlossyHeart />U
+                            </h1>
+                        </div>
+                        <h1 className="text-valentine-iconic mb-2 fade-in-blur" style={{ animationDelay: '0.3s', whiteSpace: 'nowrap' }}>
                             BE MY
                         </h1>
-                        <h1 className="text-valentine-iconic mb-8 fade-in-blur" style={{ animationDelay: '0.4s' }}>
+                        <h1 className="text-valentine-iconic mb-8 fade-in-blur" style={{ animationDelay: '0.4s', whiteSpace: 'nowrap' }}>
                             VALENTINE?
                         </h1>
 
@@ -169,7 +171,7 @@ export default function ReceiverPage() {
                         </p>
 
                         {/* Action buttons - smaller, normal-sized buttons */}
-                        <div className="flex flex-row gap-4 justify-center items-center fade-in" style={{ animationDelay: '0.8s' }}>
+                        <div className="button-row-mobile fade-in" style={{ animationDelay: '0.8s' }}>
                             <button
                                 onClick={() => handleAnswer('yes')}
                                 className="btn-primary"
