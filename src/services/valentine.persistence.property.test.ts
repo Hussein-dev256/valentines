@@ -27,7 +27,7 @@ vi.mock('./api.service', () => ({
             return { error: null };
           }),
           select: vi.fn(() => ({
-            eq: vi.fn((field: string, value: string) => ({
+            eq: vi.fn((_field: string, value: string) => ({
               single: vi.fn(() => {
                 const data = valentinesDb.get(value);
                 return {
@@ -38,7 +38,7 @@ vi.mock('./api.service', () => ({
             })),
           })),
           update: vi.fn((data: any) => ({
-            eq: vi.fn((field: string, value: string) => ({
+            eq: vi.fn((_field: string, value: string) => ({
               eq: vi.fn(() => {
                 const existing = valentinesDb.get(value);
                 if (existing && existing.status === 'pending') {

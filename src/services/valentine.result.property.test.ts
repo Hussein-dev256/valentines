@@ -20,7 +20,7 @@ vi.mock('./api.service', () => ({
       if (table === 'result_tokens') {
         return {
           select: vi.fn(() => ({
-            eq: vi.fn((field: string, token: string) => ({
+            eq: vi.fn((_field: string, token: string) => ({
               single: vi.fn(() => {
                 const valentineId = resultTokensDb.get(token);
                 if (!valentineId) {
@@ -41,7 +41,7 @@ vi.mock('./api.service', () => ({
       if (table === 'valentines') {
         return {
           select: vi.fn(() => ({
-            eq: vi.fn((field: string, id: string) => ({
+            eq: vi.fn((_field: string, id: string) => ({
               single: vi.fn(() => {
                 const data = valentinesDb.get(id);
                 if (!data) {

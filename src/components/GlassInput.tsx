@@ -1,7 +1,7 @@
 import React from 'react';
 
 export interface SolidInputProps {
-  type?: 'text' | 'email' | 'tel';
+  type?: 'text' | 'email' | 'tel' | 'password';
   id: string;
   name: string;
   value: string;
