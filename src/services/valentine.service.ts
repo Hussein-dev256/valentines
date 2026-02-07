@@ -9,7 +9,7 @@
  */
 
 import { supabase, withRetry, handleSupabaseError, ApiError } from './api.service';
-import { getOrCreateSenderId, getSenderId } from '../utils/senderIdentity';
+import { generateSenderId, storeSenderMapping, getSenderIdForValentine } from '../utils/senderIdentity';
 import type {
   CreateValentineResponse,
   GetValentineResponse,
@@ -39,7 +39,9 @@ export async function createValentine(
       // Generate UUIDs for valentine, result token, and sender
       const valentineId = crypto.randomUUID();
       const resultToken = crypto.randomUUID();
-      const senderId = getOrCreateSenderId(); // Get or create anonymous sender ID
+      // CRITICAL: Generate a NEW unique sender_id for THIS valentine
+      // Each valentine gets its own sender_id, not shared across valentines
+      const senderId = generateSenderId();
 
       // Insert Valentine record with sender_id
       const { error: valentineError } = await supabase
@@ -72,6 +74,9 @@ export async function createValentine(
       const baseUrl = window.location.origin;
       const publicUrl = `${baseUrl}/v/${valentineId}`;
       const resultUrl = `${baseUrl}/r/${resultToken}`;
+
+      // Store sender mapping in localStorage for validation
+      storeSenderMapping(valentineId, senderId);
 
       return {
         valentine_id: valentineId,
@@ -244,14 +249,15 @@ export async function getResult(token: string): Promise<GetResultResponse> {
  */
 export async function validateSenderAccess(valentineId: string): Promise<boolean> {
   try {
-    const localSenderId = getSenderId();
+    // Get the sender ID for THIS specific valentine from localStorage
+    const localSenderId = getSenderIdForValentine(valentineId);
     
     console.log('[validateSenderAccess] Valentine ID:', valentineId);
-    console.log('[validateSenderAccess] Local sender ID:', localSenderId);
+    console.log('[validateSenderAccess] Local sender ID for this valentine:', localSenderId);
     
-    // If no local sender ID, user is not the sender
+    // If no local sender ID for this valentine, user is not the sender
     if (!localSenderId) {
-      console.log('[validateSenderAccess] No local sender ID, user is NOT sender');
+      console.log('[validateSenderAccess] No local sender ID for this valentine, user is NOT sender');
       return false;
     }
 
@@ -286,14 +292,7 @@ export async function validateSenderAccess(valentineId: string): Promise<boolean
  */
 export async function validateSenderAccessByToken(resultToken: string): Promise<boolean> {
   try {
-    const localSenderId = getSenderId();
-    
-    // If no local sender ID, user is not the sender
-    if (!localSenderId) {
-      return false;
-    }
-
-    // Get valentine_id from result token
+    // Get valentine_id from result token first
     const { data: tokenData, error: tokenError } = await supabase
       .from('result_tokens')
       .select('valentine_id')
@@ -301,6 +300,14 @@ export async function validateSenderAccessByToken(resultToken: string): Promise<
       .single();
 
     if (tokenError || !tokenData) {
+      return false;
+    }
+
+    // Get the sender ID for THIS specific valentine from localStorage
+    const localSenderId = getSenderIdForValentine(tokenData.valentine_id);
+    
+    // If no local sender ID for this valentine, user is not the sender
+    if (!localSenderId) {
       return false;
     }
 
