@@ -94,8 +94,8 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (isAuthenticated) {
       fetchAnalytics();
-      // Refresh every 30 seconds
-      const interval = setInterval(fetchAnalytics, 30000);
+      // Refresh every 5 seconds for real-time updates
+      const interval = setInterval(fetchAnalytics, 5000);
       return () => clearInterval(interval);
     }
   }, [isAuthenticated]);
@@ -296,7 +296,7 @@ export default function AdminDashboard() {
                 {/* Refresh Info */}
                 <div className="mt-8 text-center fade-in" style={{ animationDelay: '0.3s' }}>
                   <p className="text-gray-600 text-sm mb-3">
-                    ⏱️ Dashboard auto-refreshes every 30 seconds
+                    ⏱️ Dashboard auto-refreshes every 5 seconds
                   </p>
                   <button
                     onClick={fetchAnalytics}
