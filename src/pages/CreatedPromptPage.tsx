@@ -7,16 +7,16 @@ import ShareInterface from '../components/ShareInterface';
 export default function CreatedPromptPage() {
     const location = useLocation();
     const navigate = useNavigate();
-    const { publicUrl, resultUrl, receiverName } = location.state || {};
+    const { receiverUrl, senderUrl, receiverName } = location.state || {};
 
-    if (!publicUrl || !resultUrl) {
+    if (!receiverUrl || !senderUrl) {
         navigate('/');
         return null;
     }
 
     const handleViewResults = () => {
-        const token = resultUrl.split('/r/')[1];
-        navigate(`/r/${token}`);
+        const senderToken = senderUrl.split('/r/')[1];
+        navigate(`/r/${senderToken}`);
     };
 
     const handleMaybeLater = () => {
@@ -44,8 +44,8 @@ export default function CreatedPromptPage() {
 
                         {/* PRIMARY CTA - Share Interface */}
                         <div className="w-full max-w-md mb-12 fade-in" style={{ animationDelay: '0.3s' }}>
-                            <ShareInterface 
-                                url={publicUrl} 
+                            <ShareInterface
+                                url={receiverUrl}
                                 receiverName={receiverName}
                             />
                         </div>

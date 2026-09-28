@@ -5,69 +5,53 @@ import GlassContainer from '../components/GlassContainer';
 import GlossyHeart from '../components/GlossyHeart';
 import RainingHearts from '../components/HeartParticles';
 import DodgingButton from '../components/DodgingButton';
-import { getValentine, submitAnswer, validateSenderAccess, getResultTokenFromDatabase } from '../services/valentine.service';
+import { getValentineByReceiverToken, submitAnswerByReceiverToken, getReceiverTokenByValentineId } from '../services/valentine.service';
 import { trackEvent, EventTypes } from '../services/analytics.service';
 import { celebrateYes } from '../utils/confetti';
-import { getResultTokenByValentineId } from '../utils/resultTokenStorage';
 
 export default function ReceiverPage() {
-    const { id } = useParams<{ id: string }>();
+    const { token } = useParams<{ token: string }>();
     const navigate = useNavigate();
     const [valentine, setValentine] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [answered, setAnswered] = useState(false);
     const [answer, setAnswer] = useState<'yes' | 'no' | null>(null);
     const [submitting, setSubmitting] = useState(false);
-    const [senderBlocked, setSenderBlocked] = useState(false);
+    const [notFound, setNotFound] = useState(false);
+    // The actual receiver_token to use (may differ from URL param if old-format redirect)
+    const [receiverToken, setReceiverToken] = useState<string | null>(null);
 
     useEffect(() => {
         loadValentine();
-    }, [id]);
+    }, [token]);
 
     const loadValentine = async () => {
-        if (!id) return;
+        if (!token) return;
 
         try {
-            // CRITICAL: Check if user is the sender using backend validation
-            // Same link, different behavior: sender → results, receiver → answering page
-            const isSender = await validateSenderAccess(id);
-            
-            console.log('[ReceiverPage] Valentine ID:', id);
-            console.log('[ReceiverPage] Is sender?', isSender);
-            
-            if (isSender) {
-                // Sender clicks same link → redirect to results page
-                console.log('[ReceiverPage] User is sender, fetching result token...');
-                
-                // First try localStorage (fast path)
-                let resultToken = getResultTokenByValentineId(id);
-                console.log('[ReceiverPage] Result token from localStorage:', resultToken);
-                
-                // If not in localStorage, fetch from database (incognito/different device)
-                if (!resultToken) {
-                    console.log('[ReceiverPage] Fetching result token from database...');
-                    resultToken = await getResultTokenFromDatabase(id);
-                    console.log('[ReceiverPage] Result token from database:', resultToken);
-                }
-                
-                if (resultToken) {
-                    // Redirect to results page with the token
-                    console.log('[ReceiverPage] Redirecting to results page:', `/r/${resultToken}`);
-                    navigate(`/r/${resultToken}`, { replace: true });
-                    return;
-                } else {
-                    // This should never happen (every valentine has a result token)
-                    // But handle gracefully just in case
-                    console.error('[ReceiverPage] Result token not found for valentine:', id);
-                    setSenderBlocked(true);
-                    setLoading(false);
+            // Try loading by receiver_token first (new format)
+            let data = null;
+            let activeToken = token;
+
+            try {
+                data = await getValentineByReceiverToken(token);
+            } catch {
+                // If not found, check if this is an old-format valentine ID
+                const fallbackToken = await getReceiverTokenByValentineId(token);
+                if (fallbackToken) {
+                    // Redirect to the new URL format
+                    navigate(`/v/${fallbackToken}`, { replace: true });
                     return;
                 }
             }
 
-            // Not sender: show answering page (receiver flow)
-            console.log('[ReceiverPage] User is receiver, loading valentine data...');
-            const data = await getValentine(id);
+            if (!data) {
+                setNotFound(true);
+                setLoading(false);
+                return;
+            }
+
+            setReceiverToken(activeToken);
             setValentine(data);
 
             // Check if already answered
@@ -76,20 +60,21 @@ export default function ReceiverPage() {
                 setAnswer(data.status as 'yes' | 'no');
             }
 
-            trackEvent(EventTypes.RECEIVER_OPENED, id);
+            trackEvent(EventTypes.RECEIVER_OPENED, data.valentine_id);
         } catch (error) {
             console.error('Error loading valentine:', error);
+            setNotFound(true);
         } finally {
             setLoading(false);
         }
     };
 
     const handleAnswer = async (response: 'yes' | 'no') => {
-        if (!id || answered || submitting) return;
+        if (!receiverToken || answered || submitting) return;
 
         setSubmitting(true);
         try {
-            await submitAnswer(id, response);
+            await submitAnswerByReceiverToken(receiverToken, response);
             setAnswered(true);
             setAnswer(response);
 
@@ -99,11 +84,11 @@ export default function ReceiverPage() {
 
             trackEvent(
                 response === 'yes' ? EventTypes.ANSWERED_YES : EventTypes.ANSWERED_NO,
-                id
+                valentine?.valentine_id
             );
         } catch (error) {
             console.error('Error answering valentine:', error);
-            setSubmitting(false); // Re-enable buttons on error
+            setSubmitting(false);
         }
     };
 
@@ -123,7 +108,7 @@ export default function ReceiverPage() {
         );
     }
 
-    if (senderBlocked) {
+    if (notFound) {
         return (
             <>
                 <div className="liquid-gradient-bg" />
@@ -131,18 +116,9 @@ export default function ReceiverPage() {
                 <div className="scene-container">
                     <div className="content-center">
                         <GlassContainer>
-                            <h1 className="text-hero mb-8">Hold Up! 🚫</h1>
-                            <p className="text-body-large mb-8">
-                                You can't answer your own Valentine! 😅
-                            </p>
-                            <p className="text-body mb-12">
-                                This link is for the person you sent it to. 
-                                Check your results page to see if they've answered.
-                            </p>
-                            <button
-                                onClick={() => navigate('/')}
-                                className="btn-primary"
-                            >
+                            <h2 className="text-h2 mb-4">Valentine Not Found</h2>
+                            <p className="text-body mb-8">This Valentine doesn't exist or the link is invalid.</p>
+                            <button onClick={() => navigate('/')} className="btn-primary">
                                 Go Home
                             </button>
                         </GlassContainer>
@@ -198,7 +174,7 @@ export default function ReceiverPage() {
                                     </p>
                                 </>
                             )}
-                            
+
                             <button
                                 onClick={() => window.location.href = '/create'}
                                 className="btn-primary fade-in"
@@ -218,7 +194,7 @@ export default function ReceiverPage() {
         <>
             <div className="liquid-gradient-bg" />
             <RainingHearts />
-            
+
             <div className="scene-container">
                 <div className="content-center">
                     <GlassContainer>
@@ -245,7 +221,7 @@ export default function ReceiverPage() {
                             From: <strong>{valentine.sender_name}</strong>
                         </p>
 
-                        {/* Action buttons - smaller, always horizontal for dodging gameplay */}
+                        {/* Action buttons */}
                         <div className="button-row-game fade-in" style={{ animationDelay: '0.8s' }}>
                             <button
                                 onClick={() => handleAnswer('yes')}

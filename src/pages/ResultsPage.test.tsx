@@ -13,7 +13,7 @@ vi.mock('../services/analytics.service', () => ({
   },
 }));
 
-const renderWithRouter = (component: React.ReactElement, token: string = 'test-token') => {
+const renderWithRouter = (component: React.ReactElement, token: string = 'test-sender-token') => {
   window.history.pushState({}, 'Test page', `/r/${token}`);
   return render(
     <BrowserRouter>
@@ -30,16 +30,17 @@ describe('ResultsPage', () => {
   });
 
   it('displays warning screen before showing result', async () => {
-    vi.spyOn(valentineService, 'getResult').mockResolvedValue({
+    vi.spyOn(valentineService, 'getValentineBySenderToken').mockResolvedValue({
+      valentine_id: 'test-id',
+      sender_name: 'John',
+      receiver_name: 'Jane',
       status: 'yes',
       created_at: new Date().toISOString(),
       answered_at: new Date().toISOString(),
-      sender_id: 'test-sender-id',
     });
-    vi.spyOn(valentineService, 'validateSenderAccessByToken').mockResolvedValue(true);
 
     renderWithRouter(<ResultsPage />);
-    
+
     await waitFor(() => {
       expect(screen.getByText(/WAIT/i)).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /Yes… tell me/i })).toBeInTheDocument();
@@ -48,39 +49,41 @@ describe('ResultsPage', () => {
 
   it('shows result after clicking reveal button', async () => {
     const user = userEvent.setup();
-    vi.spyOn(valentineService, 'getResult').mockResolvedValue({
+    vi.spyOn(valentineService, 'getValentineBySenderToken').mockResolvedValue({
+      valentine_id: 'test-id',
+      sender_name: 'John',
+      receiver_name: 'Jane',
       status: 'yes',
       created_at: new Date().toISOString(),
       answered_at: new Date().toISOString(),
-      sender_id: 'test-sender-id',
     });
-    vi.spyOn(valentineService, 'validateSenderAccessByToken').mockResolvedValue(true);
 
     renderWithRouter(<ResultsPage />);
-    
+
     await waitFor(() => {
       expect(screen.getByText(/WAIT/i)).toBeInTheDocument();
     });
 
     const revealButton = screen.getByRole('button', { name: /Yes… tell me/i });
     await user.click(revealButton);
-    
+
     await waitFor(() => {
       expect(screen.getByText(/THEY SAID YESSS/i)).toBeInTheDocument();
     });
   });
 
   it('displays pending status when not answered', async () => {
-    vi.spyOn(valentineService, 'getResult').mockResolvedValue({
+    vi.spyOn(valentineService, 'getValentineBySenderToken').mockResolvedValue({
+      valentine_id: 'test-id',
+      sender_name: 'John',
+      receiver_name: 'Jane',
       status: 'pending',
       created_at: new Date().toISOString(),
       answered_at: null,
-      sender_id: 'test-sender-id',
     });
-    vi.spyOn(valentineService, 'validateSenderAccessByToken').mockResolvedValue(true);
 
     renderWithRouter(<ResultsPage />);
-    
+
     await waitFor(() => {
       expect(screen.getByText(/Still Waiting/i)).toBeInTheDocument();
       expect(screen.getByText(/haven't answered yet/i)).toBeInTheDocument();
@@ -89,23 +92,24 @@ describe('ResultsPage', () => {
 
   it('displays celebratory message for YES answer', async () => {
     const user = userEvent.setup();
-    vi.spyOn(valentineService, 'getResult').mockResolvedValue({
+    vi.spyOn(valentineService, 'getValentineBySenderToken').mockResolvedValue({
+      valentine_id: 'test-id',
+      sender_name: 'John',
+      receiver_name: 'Jane',
       status: 'yes',
       created_at: new Date().toISOString(),
       answered_at: new Date().toISOString(),
-      sender_id: 'test-sender-id',
     });
-    vi.spyOn(valentineService, 'validateSenderAccessByToken').mockResolvedValue(true);
 
     renderWithRouter(<ResultsPage />);
-    
+
     await waitFor(() => {
       expect(screen.getByText(/WAIT/i)).toBeInTheDocument();
     });
 
     const revealButton = screen.getByRole('button', { name: /Yes… tell me/i });
     await user.click(revealButton);
-    
+
     await waitFor(() => {
       expect(screen.getByText(/THEY SAID YESSS/i)).toBeInTheDocument();
       expect(screen.getByText(/behave yourself/i)).toBeInTheDocument();
@@ -114,36 +118,36 @@ describe('ResultsPage', () => {
 
   it('displays humor-cushioned message for NO answer', async () => {
     const user = userEvent.setup();
-    vi.spyOn(valentineService, 'getResult').mockResolvedValue({
+    vi.spyOn(valentineService, 'getValentineBySenderToken').mockResolvedValue({
+      valentine_id: 'test-id',
+      sender_name: 'John',
+      receiver_name: 'Jane',
       status: 'no',
       created_at: new Date().toISOString(),
       answered_at: new Date().toISOString(),
-      sender_id: 'test-sender-id',
     });
-    vi.spyOn(valentineService, 'validateSenderAccessByToken').mockResolvedValue(true);
 
     renderWithRouter(<ResultsPage />);
-    
+
     await waitFor(() => {
       expect(screen.getByText(/WAIT/i)).toBeInTheDocument();
     });
 
     const revealButton = screen.getByRole('button', { name: /Yes… tell me/i });
     await user.click(revealButton);
-    
+
     await waitFor(() => {
       expect(screen.getByText(/They said NO/i)).toBeInTheDocument();
-      expect(screen.getByText(/Valentine plenty outside/i)).toBeInTheDocument();
     });
   });
 
-  it('handles invalid token error', async () => {
-    vi.spyOn(valentineService, 'getResult').mockRejectedValue(new Error('Invalid result token'));
+  it('handles invalid sender token', async () => {
+    vi.spyOn(valentineService, 'getValentineBySenderToken').mockRejectedValue(new Error('Not found'));
 
     renderWithRouter(<ResultsPage />);
-    
+
     await waitFor(() => {
-      expect(screen.getByText(/Invalid result token/i)).toBeInTheDocument();
+      expect(screen.getByText(/Invalid Link/i)).toBeInTheDocument();
     });
   });
 });

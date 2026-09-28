@@ -3,14 +3,28 @@
  * Feature: will-you-be-my-valentine
  * 
  * Tests Properties 19-23, 25-26 from the design document
+ * Updated for dual-token architecture (sender_token + receiver_token)
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import * as fc from 'fast-check';
-import { createValentine, submitAnswer, getValentine } from './valentine.service';
+import { createValentine, submitAnswerByReceiverToken, getValentineByReceiverToken } from './valentine.service';
 
 // In-memory database for testing
-const valentinesDb = new Map<string, { sender_name: string | null; receiver_name: string; status: string }>();
+const valentinesDb = new Map<string, {
+  id: string;
+  sender_name: string | null;
+  receiver_name: string;
+  status: string;
+  receiver_token: string;
+  sender_token: string;
+}>();
+
+// Mock senderIdentity
+vi.mock('../utils/senderIdentity', () => ({
+  generateSenderId: vi.fn(() => 'mock-sender-id'),
+  storeSenderMapping: vi.fn(),
+}));
 
 // Mock Supabase
 vi.mock('./api.service', () => ({
@@ -20,19 +34,30 @@ vi.mock('./api.service', () => ({
         return {
           insert: vi.fn((data: any) => {
             valentinesDb.set(data.id, {
+              id: data.id,
               sender_name: data.sender_name,
               receiver_name: data.receiver_name,
               status: data.status,
+              receiver_token: data.receiver_token,
+              sender_token: data.sender_token,
             });
             return { error: null };
           }),
           select: vi.fn(() => ({
             eq: vi.fn((_field: string, value: string) => ({
               single: vi.fn(() => {
-                const data = valentinesDb.get(value);
+                // Look up by receiver_token
+                for (const [, v] of valentinesDb) {
+                  if (v.receiver_token === value) {
+                    return {
+                      data: { id: v.id, sender_name: v.sender_name, receiver_name: v.receiver_name, status: v.status },
+                      error: null,
+                    };
+                  }
+                }
                 return {
-                  data: data || null,
-                  error: data ? null : { message: 'Not found' },
+                  data: null,
+                  error: { message: 'Not found' },
                 };
               }),
             })),
@@ -40,9 +65,11 @@ vi.mock('./api.service', () => ({
           update: vi.fn((data: any) => ({
             eq: vi.fn((_field: string, value: string) => ({
               eq: vi.fn(() => {
-                const existing = valentinesDb.get(value);
-                if (existing && existing.status === 'pending') {
-                  valentinesDb.set(value, { ...existing, status: data.status });
+                // Look up by receiver_token and update if pending
+                for (const [key, v] of valentinesDb) {
+                  if (v.receiver_token === value && v.status === 'pending') {
+                    valentinesDb.set(key, { ...v, status: data.status });
+                  }
                 }
                 return { error: null };
               }),
@@ -60,7 +87,7 @@ vi.mock('./api.service', () => ({
   },
   withRetry: vi.fn((fn) => fn()),
   handleSupabaseError: vi.fn(),
-  ApiError: class extends Error {},
+  ApiError: class extends Error { },
 }));
 
 describe('Data Persistence Property Tests', () => {
@@ -88,11 +115,13 @@ describe('Data Persistence Property Tests', () => {
           // IDs should be different
           expect(valentine1.valentine_id).not.toBe(valentine2.valentine_id);
 
-          // Answer first Valentine
-          await submitAnswer(valentine1.valentine_id, 'yes');
+          // Answer first Valentine using its receiver token
+          const receiverToken1 = valentine1.receiver_url.split('/v/')[1];
+          await submitAnswerByReceiverToken(receiverToken1, 'yes');
 
           // Second Valentine should still be pending
-          const valentine2Data = await getValentine(valentine2.valentine_id);
+          const receiverToken2 = valentine2.receiver_url.split('/v/')[1];
+          const valentine2Data = await getValentineByReceiverToken(receiverToken2);
           expect(valentine2Data.status).toBe('pending');
         }
       ),
@@ -116,9 +145,10 @@ describe('Data Persistence Property Tests', () => {
           const valentine1 = await createValentine(senderName, receiverName);
           const valentine2 = await createValentine(senderName, receiverName);
 
-          // Should have different IDs
+          // Should have different IDs and different URLs
           expect(valentine1.valentine_id).not.toBe(valentine2.valentine_id);
-          expect(valentine1.result_url).not.toBe(valentine2.result_url);
+          expect(valentine1.sender_url).not.toBe(valentine2.sender_url);
+          expect(valentine1.receiver_url).not.toBe(valentine2.receiver_url);
         }
       ),
       { numRuns: 100 }
@@ -127,8 +157,7 @@ describe('Data Persistence Property Tests', () => {
 
   /**
    * Property 21: Answer-Valentine association
-   * For any submitted answer, it should be associated with exactly one Valentine instance,
-   * and that association should be maintained in the database
+   * For any submitted answer, it should be associated with exactly one Valentine instance
    * **Validates: Requirements 10.5**
    */
   it('Property 21: Answers are associated with correct Valentine', async () => {
@@ -139,11 +168,12 @@ describe('Data Persistence Property Tests', () => {
         async (receiverName, answer) => {
           // Create a valentine first
           const created = await createValentine(null, receiverName);
-          
-          await submitAnswer(created.valentine_id, answer);
+
+          const receiverToken = created.receiver_url.split('/v/')[1];
+          await submitAnswerByReceiverToken(receiverToken, answer);
 
           // Answer should be retrievable for this Valentine
-          const valentine = await getValentine(created.valentine_id);
+          const valentine = await getValentineByReceiverToken(receiverToken);
           expect(valentine.status).toBe(answer);
         }
       ),
@@ -165,8 +195,9 @@ describe('Data Persistence Property Tests', () => {
         async (receiverName, senderName) => {
           const created = await createValentine(senderName, receiverName);
 
-          // Should be retrievable
-          const retrieved = await getValentine(created.valentine_id);
+          // Should be retrievable by receiver token
+          const receiverToken = created.receiver_url.split('/v/')[1];
+          const retrieved = await getValentineByReceiverToken(receiverToken);
           expect(retrieved.receiver_name).toBe(receiverName.trim());
           expect(retrieved.sender_name).toBe(senderName?.trim() || null);
         }
@@ -178,10 +209,9 @@ describe('Data Persistence Property Tests', () => {
   /**
    * Property 23: Answer persistence
    * For any submitted answer, the database should be updated with the answer status
-   * and timestamp
    * **Validates: Requirements 14.2**
    */
-  it('Property 23: Answers are persisted with timestamps', async () => {
+  it('Property 23: Answers are persisted correctly', async () => {
     await fc.assert(
       fc.asyncProperty(
         fc.string({ minLength: 1 }).filter(s => s.trim().length > 0),
@@ -189,14 +219,15 @@ describe('Data Persistence Property Tests', () => {
         async (receiverName, answer) => {
           // Create a valentine first
           const created = await createValentine(null, receiverName);
-          
-          const result = await submitAnswer(created.valentine_id, answer);
+
+          const receiverToken = created.receiver_url.split('/v/')[1];
+          const result = await submitAnswerByReceiverToken(receiverToken, answer);
 
           // Should succeed
           expect(result.success).toBe(true);
 
           // Status should be updated
-          const valentine = await getValentine(created.valentine_id);
+          const valentine = await getValentineByReceiverToken(receiverToken);
           expect(valentine.status).toBe(answer);
         }
       ),
@@ -206,8 +237,6 @@ describe('Data Persistence Property Tests', () => {
 
   /**
    * Property 25: Valentine-answer referential integrity
-   * For any Valentine instance, the association between the Valentine ID and its answer status
-   * should be maintained in the database
    * **Validates: Requirements 14.4**
    */
   it('Property 25: Valentine-answer referential integrity is maintained', async () => {
@@ -217,10 +246,10 @@ describe('Data Persistence Property Tests', () => {
         fc.constantFrom('yes', 'no'),
         async (receiverName, answer) => {
           const created = await createValentine(null, receiverName);
-          await submitAnswer(created.valentine_id, answer);
+          const receiverToken = created.receiver_url.split('/v/')[1];
+          await submitAnswerByReceiverToken(receiverToken, answer);
 
-          // Answer should be retrievable via Valentine ID
-          const valentine = await getValentine(created.valentine_id);
+          const valentine = await getValentineByReceiverToken(receiverToken);
           expect(valentine.status).toBe(answer);
         }
       ),
@@ -230,8 +259,7 @@ describe('Data Persistence Property Tests', () => {
 
   /**
    * Property 26: Token-Valentine referential integrity
-   * For any result token, the association between the token and its Valentine ID
-   * should be maintained in the database
+   * For any created Valentine, both sender_token and receiver_token should be valid UUIDs
    * **Validates: Requirements 14.5**
    */
   it('Property 26: Token-Valentine referential integrity is maintained', async () => {
@@ -241,10 +269,15 @@ describe('Data Persistence Property Tests', () => {
         async (receiverName) => {
           const created = await createValentine(null, receiverName);
 
-          // Token should be in result URL
-          const token = created.result_url.split('/r/')[1];
-          expect(token).toBeTruthy();
-          expect(token).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
+          // Sender token should be in sender URL
+          const senderToken = created.sender_url.split('/r/')[1];
+          expect(senderToken).toBeTruthy();
+          expect(senderToken).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
+
+          // Receiver token should be in receiver URL
+          const receiverToken = created.receiver_url.split('/v/')[1];
+          expect(receiverToken).toBeTruthy();
+          expect(receiverToken).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
         }
       ),
       { numRuns: 100 }

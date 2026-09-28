@@ -3,56 +3,52 @@
  * Feature: will-you-be-my-valentine
  * 
  * Tests Properties 8, 17, 18, 24 from the design document
+ * Updated for dual-token architecture (uses sender_token for result access)
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import * as fc from 'fast-check';
-import { getResult } from './valentine.service';
+import { getValentineBySenderToken } from './valentine.service';
 
-// In-memory databases for testing
-const resultTokensDb = new Map<string, string>(); // token -> valentine_id
-const valentinesDb = new Map<string, { status: string; created_at: string; answered_at: string | null }>();
+// In-memory database for testing — maps sender_token -> valentine data
+const valentinesDb = new Map<string, {
+  id: string;
+  sender_name: string | null;
+  receiver_name: string;
+  status: string;
+  created_at: string;
+  answered_at: string | null;
+  sender_token: string;
+}>();
 
 // Mock Supabase
 vi.mock('./api.service', () => ({
   supabase: {
     from: vi.fn((table: string) => {
-      if (table === 'result_tokens') {
-        return {
-          select: vi.fn(() => ({
-            eq: vi.fn((_field: string, token: string) => ({
-              single: vi.fn(() => {
-                const valentineId = resultTokensDb.get(token);
-                if (!valentineId) {
-                  return {
-                    data: null,
-                    error: { message: 'Invalid token' },
-                  };
-                }
-                return {
-                  data: { valentine_id: valentineId },
-                  error: null,
-                };
-              }),
-            })),
-          })),
-        };
-      }
       if (table === 'valentines') {
         return {
           select: vi.fn(() => ({
-            eq: vi.fn((_field: string, id: string) => ({
+            eq: vi.fn((_field: string, senderToken: string) => ({
               single: vi.fn(() => {
-                const data = valentinesDb.get(id);
-                if (!data) {
-                  return {
-                    data: null,
-                    error: { message: 'Valentine not found' },
-                  };
+                // Look up by sender_token
+                for (const [, v] of valentinesDb) {
+                  if (v.sender_token === senderToken) {
+                    return {
+                      data: {
+                        id: v.id,
+                        sender_name: v.sender_name,
+                        receiver_name: v.receiver_name,
+                        status: v.status,
+                        created_at: v.created_at,
+                        answered_at: v.answered_at,
+                      },
+                      error: null,
+                    };
+                  }
                 }
                 return {
-                  data,
-                  error: null,
+                  data: null,
+                  error: { message: 'Valentine not found' },
                 };
               }),
             })),
@@ -66,39 +62,46 @@ vi.mock('./api.service', () => ({
   handleSupabaseError: vi.fn((error: any) => {
     throw new Error(error.message || 'Invalid token');
   }),
-  ApiError: class extends Error {},
+  ApiError: class extends Error { },
 }));
 
 describe('Result Access Property Tests', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    resultTokensDb.clear();
     valentinesDb.clear();
-    
+
     // Add some valid test data
-    const testValentineId = 'test-valentine-id';
-    const testToken = '00000000-0000-1000-8000-000000000000';
-    resultTokensDb.set(testToken, testValentineId);
-    valentinesDb.set(testValentineId, {
+    const testSenderToken = '00000000-0000-1000-8000-000000000000';
+    valentinesDb.set('test-valentine-id', {
+      id: 'test-valentine-id',
+      sender_name: 'Alice',
+      receiver_name: 'Bob',
       status: 'yes',
       created_at: new Date().toISOString(),
       answered_at: new Date().toISOString(),
+      sender_token: testSenderToken,
     });
   });
 
   /**
-   * Property 8: Result access requires valid token
-   * For any invalid or random result token, attempting to access results
+   * Property 8: Result access requires valid sender token
+   * For any invalid or random sender token, attempting to access results
    * should be denied with an error response
    * **Validates: Requirements 3.6**
    */
-  it('Property 8: Invalid tokens are rejected', async () => {
+  it('Property 8: Invalid sender tokens are rejected', async () => {
     await fc.assert(
       fc.asyncProperty(
-        fc.uuid().filter(token => !resultTokensDb.has(token)),
+        fc.uuid().filter(token => {
+          // Ensure the token isn't in our test db
+          for (const [, v] of valentinesDb) {
+            if (v.sender_token === token) return false;
+          }
+          return true;
+        }),
         async (invalidToken) => {
           // Invalid tokens should throw error
-          await expect(getResult(invalidToken)).rejects.toThrow();
+          await expect(getValentineBySenderToken(invalidToken)).rejects.toThrow();
         }
       ),
       { numRuns: 50 }
@@ -107,27 +110,30 @@ describe('Result Access Property Tests', () => {
 
   /**
    * Property 17: Answer privacy
-   * For any Valentine answer, the answer should only be accessible via the correct result token
+   * For any Valentine answer, the answer should only be accessible via the correct sender token
    * and not through any public API or interface
    * **Validates: Requirements 6.7, 18.1, 18.2**
    */
-  it('Property 17: Answers are private and token-protected', async () => {
+  it('Property 17: Answers are private and sender-token-protected', async () => {
     await fc.assert(
       fc.asyncProperty(
         fc.uuid(),
-        async (validToken) => {
-          // Add token to database
+        async (senderToken) => {
+          // Add Valentine with this sender token
           const valentineId = crypto.randomUUID();
-          resultTokensDb.set(validToken, valentineId);
           valentinesDb.set(valentineId, {
+            id: valentineId,
+            sender_name: 'Sender',
+            receiver_name: 'Receiver',
             status: 'yes',
             created_at: new Date().toISOString(),
             answered_at: new Date().toISOString(),
+            sender_token: senderToken,
           });
-          
-          const result = await getResult(validToken);
 
-          // Result should be accessible with valid token
+          const result = await getValentineBySenderToken(senderToken);
+
+          // Result should be accessible with valid sender token
           expect(result).toBeTruthy();
           expect(result.status).toMatch(/^(pending|yes|no)$/);
         }
@@ -137,28 +143,32 @@ describe('Result Access Property Tests', () => {
   });
 
   /**
-   * Property 18: Result token validation
-   * For any result access attempt, the system should verify the token exists
+   * Property 18: Sender token validation
+   * For any result access attempt, the system should verify the sender token exists
    * in the database before returning result data
    * **Validates: Requirements 7.1**
    */
-  it('Property 18: Tokens are validated before returning results', async () => {
+  it('Property 18: Sender tokens are validated before returning results', async () => {
     await fc.assert(
       fc.asyncProperty(
         fc.uuid(),
-        async (token) => {
-          // Add token to database
+        async (senderToken) => {
+          // Add Valentine with this sender token
           const valentineId = crypto.randomUUID();
-          resultTokensDb.set(token, valentineId);
           valentinesDb.set(valentineId, {
+            id: valentineId,
+            sender_name: 'Sender',
+            receiver_name: 'Receiver',
             status: 'pending',
             created_at: new Date().toISOString(),
             answered_at: null,
+            sender_token: senderToken,
           });
-          
-          const result = await getResult(token);
 
-          // Should return valid result structure
+          const result = await getValentineBySenderToken(senderToken);
+
+          // Should return valid result structure (service transforms id -> valentine_id)
+          expect(result).toHaveProperty('valentine_id');
           expect(result).toHaveProperty('status');
           expect(result).toHaveProperty('created_at');
           expect(result).toHaveProperty('answered_at');
@@ -170,7 +180,7 @@ describe('Result Access Property Tests', () => {
 
   /**
    * Property 24: Result retrieval accuracy
-   * For any valid result token, the returned status should match
+   * For any valid sender token, the returned status should match
    * the current status in the database
    * **Validates: Requirements 14.3**
    */
@@ -179,24 +189,27 @@ describe('Result Access Property Tests', () => {
       fc.asyncProperty(
         fc.uuid(),
         fc.constantFrom('pending', 'yes', 'no'),
-        async (token, status) => {
-          // Add token to database
+        async (senderToken, status) => {
+          // Add Valentine with this sender token and status
           const valentineId = crypto.randomUUID();
-          resultTokensDb.set(token, valentineId);
           valentinesDb.set(valentineId, {
+            id: valentineId,
+            sender_name: 'Sender',
+            receiver_name: 'Receiver',
             status,
             created_at: new Date().toISOString(),
             answered_at: status !== 'pending' ? new Date().toISOString() : null,
+            sender_token: senderToken,
           });
-          
-          const result = await getResult(token);
+
+          const result = await getValentineBySenderToken(senderToken);
 
           // Status should be one of the valid values
           expect(['pending', 'yes', 'no']).toContain(result.status);
-          
+
           // Timestamps should be valid
           expect(result.created_at).toBeTruthy();
-          
+
           // If answered, answered_at should be present
           if (result.status !== 'pending') {
             expect(result.answered_at).toBeTruthy();

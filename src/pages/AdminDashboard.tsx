@@ -40,25 +40,23 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Admin password - use environment variable or fallback to default
-  // IMPORTANT: Change this before deploying to production!
-  // Recommended: Set VITE_ADMIN_PASSWORD in your .env.local and Vercel environment variables
-  const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || 'valentine2025';
-
-  // Debug: Log the password being used (remove this in production!)
-  console.log('Admin password check:', ADMIN_PASSWORD === 'valentine2025' ? 'Using default password' : 'Using custom password');
+  const adminPassword = import.meta.env.VITE_ADMIN_PASSWORD?.trim();
+  const isAdminConfigured = Boolean(adminPassword);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Login attempt with password length:', password.length);
-    console.log('Expected password length:', ADMIN_PASSWORD.length);
-    if (password === ADMIN_PASSWORD) {
+
+    if (!isAdminConfigured || !adminPassword) {
+      setError('Admin dashboard is not configured. Set VITE_ADMIN_PASSWORD first.');
+      return;
+    }
+
+    if (password === adminPassword) {
       setIsAuthenticated(true);
       setError(null);
       fetchAnalytics();
     } else {
       setError('Invalid password');
-      console.log('Password mismatch');
     }
   };
 
@@ -119,7 +117,9 @@ export default function AdminDashboard() {
                   Admin Dashboard
                 </h1>
                 <p className="text-body mt-3" style={{ color: 'rgba(0, 0, 0, 0.6)' }}>
-                  Enter your password to access analytics
+                  {isAdminConfigured
+                    ? 'Enter your password to access analytics'
+                    : 'Set VITE_ADMIN_PASSWORD to enable analytics access'}
                 </p>
               </div>
 
@@ -139,6 +139,11 @@ export default function AdminDashboard() {
                   <button
                     type="submit"
                     className="btn-primary w-full"
+                    disabled={!isAdminConfigured}
+                    style={{
+                      opacity: isAdminConfigured ? 1 : 0.7,
+                      cursor: isAdminConfigured ? 'pointer' : 'not-allowed',
+                    }}
                   >
                     Login 🔓
                   </button>

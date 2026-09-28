@@ -7,9 +7,10 @@
 // Export Valentine service
 export {
   createValentine,
-  getValentine,
-  submitAnswer,
-  getResult,
+  getValentineByReceiverToken,
+  getValentineBySenderToken,
+  submitAnswerByReceiverToken,
+  getReceiverTokenByValentineId,
 } from './valentine.service';
 
 // Export Analytics service

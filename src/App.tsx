@@ -17,7 +17,7 @@ function App() {
           <Route path="/" element={<OriginPage />} />
           <Route path="/create" element={<CreateValentinePage />} />
           <Route path="/created/:id" element={<CreatedPromptPage />} />
-          <Route path="/v/:id" element={<ReceiverPage />} />
+          <Route path="/v/:token" element={<ReceiverPage />} />
           <Route path="/r/:token" element={<ResultsPage />} />
           <Route path="/my-valentines" element={<MyValentinesPage />} />
           <Route path="/admin" element={<AdminDashboard />} />

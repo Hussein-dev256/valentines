@@ -4,14 +4,16 @@
  * Feature: will-you-be-my-valentine
  * 
  * These tests use fast-check to verify universal properties across many inputs.
- * Each property test runs 20 iterations with randomized inputs for optimized speed.
+ * Each property test runs 20-25 iterations with randomized inputs for optimized speed.
+ * 
+ * Updated for dual-token architecture (sender_token + receiver_token).
  * 
  * Properties tested:
  * - Property 3: Valentine ID uniqueness
- * - Property 4: Result token uniqueness
- * - Property 5: Valentine URL format consistency
- * - Property 6: Result URL format consistency
- * - Property 7: One-to-one Valentine-token relationship
+ * - Property 4: Sender token uniqueness
+ * - Property 5: Receiver URL format consistency
+ * - Property 6: Sender URL format consistency
+ * - Property 7: Dual-token separation
  */
 
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
@@ -66,7 +68,7 @@ describe('ValentineService - Property-Based Tests', () => {
        * For any set of created Valentines, all valentine_id values should be 
        * globally unique with no duplicates.
        */
-      
+
       await fc.assert(
         fc.asyncProperty(
           // Generate an array of 5-20 Valentine creation requests
@@ -81,60 +83,37 @@ describe('ValentineService - Property-Based Tests', () => {
             // Set up mock for successful creation
             createMockSupabaseSuccess();
 
-            // Track all generated valentine IDs
-            const generatedIds = new Set<string>();
-            const actualIds: string[] = [];
-
-            // Mock crypto.randomUUID to track generated IDs
-            let idCounter = 0;
-            const originalRandomUUID = crypto.randomUUID.bind(crypto);
-            vi.spyOn(crypto, 'randomUUID').mockImplementation(() => {
-              const id = `${idCounter % 2 === 0 ? 'valentine' : 'token'}-${originalRandomUUID()}`;
-              if (idCounter % 2 === 0) {
-                actualIds.push(id);
-              }
-              idCounter++;
-              return id as `${string}-${string}-${string}-${string}-${string}`;
-            });
-
             // Create all Valentines
             const results = await Promise.all(
-              valentineRequests.map(req => 
+              valentineRequests.map(req =>
                 createValentine(req.senderName, req.receiverName)
               )
             );
 
             // Extract valentine IDs from results
             const valentineIds = results.map(r => r.valentine_id);
-
-            // Add all IDs to set
-            valentineIds.forEach(id => generatedIds.add(id));
+            const uniqueIds = new Set(valentineIds);
 
             // Property: All valentine IDs must be unique (set size equals array length)
-            expect(generatedIds.size).toBe(valentineIds.length);
-
-            // Additional check: No duplicate IDs in the array
-            const hasDuplicates = valentineIds.length !== new Set(valentineIds).size;
-            expect(hasDuplicates).toBe(false);
+            expect(uniqueIds.size).toBe(valentineIds.length);
           }
         ),
         { numRuns: 20 }
       );
-    }, 30000); // Increase timeout to 30 seconds
+    }, 30000);
   });
 
-  describe('Property 4: Result token uniqueness', () => {
-    it('should generate globally unique result_token values for any set of created Valentines', async () => {
+  describe('Property 4: Sender token uniqueness', () => {
+    it('should generate globally unique sender_token values for any set of created Valentines', async () => {
       /**
        * **Validates: Requirements 2.6, 3.4**
        * 
-       * For any set of created Valentines, all result_token values should be 
+       * For any set of created Valentines, all sender_token values should be 
        * globally unique with no duplicates.
        */
-      
+
       await fc.assert(
         fc.asyncProperty(
-          // Generate an array of 5-20 Valentine creation requests
           fc.array(
             fc.record({
               senderName: fc.option(nonWhitespaceString({ minLength: 1, maxLength: 50 }), { nil: null }),
@@ -146,60 +125,38 @@ describe('ValentineService - Property-Based Tests', () => {
             // Set up mock for successful creation
             createMockSupabaseSuccess();
 
-            // Track all generated result tokens
-            const generatedTokens = new Set<string>();
-
-            // Mock crypto.randomUUID to track generated tokens
-            let idCounter = 0;
-            const tokens: string[] = [];
-            const originalRandomUUID = crypto.randomUUID.bind(crypto);
-            vi.spyOn(crypto, 'randomUUID').mockImplementation(() => {
-              const id = `${idCounter % 2 === 0 ? 'valentine' : 'token'}-${originalRandomUUID()}`;
-              if (idCounter % 2 === 1) {
-                tokens.push(id);
-              }
-              idCounter++;
-              return id as `${string}-${string}-${string}-${string}-${string}`;
-            });
-
             // Create all Valentines
             const results = await Promise.all(
-              valentineRequests.map(req => 
+              valentineRequests.map(req =>
                 createValentine(req.senderName, req.receiverName)
               )
             );
 
-            // Extract result tokens from URLs
-            const resultTokens = results.map(r => {
-              const match = r.result_url.match(/\/r\/(.+)$/);
+            // Extract sender tokens from sender URLs
+            const senderTokens = results.map(r => {
+              const match = r.sender_url.match(/\/r\/(.+)$/);
               return match ? match[1] : '';
             });
 
-            // Add all tokens to set
-            resultTokens.forEach(token => generatedTokens.add(token));
-
-            // Property: All result tokens must be unique (set size equals array length)
-            expect(generatedTokens.size).toBe(resultTokens.length);
-
-            // Additional check: No duplicate tokens in the array
-            const hasDuplicates = resultTokens.length !== new Set(resultTokens).size;
-            expect(hasDuplicates).toBe(false);
+            // Property: All sender tokens must be unique
+            const uniqueTokens = new Set(senderTokens);
+            expect(uniqueTokens.size).toBe(senderTokens.length);
           }
         ),
         { numRuns: 25 }
       );
-    }, 30000); // Increase timeout to 30 seconds
+    }, 30000);
   });
 
-  describe('Property 5: Valentine URL format consistency', () => {
-    it('should generate Valentine links matching /v/{valentine_id} format with valid UUID', async () => {
+  describe('Property 5: Receiver URL format consistency', () => {
+    it('should generate receiver links matching /v/{receiver_token} format with valid UUID', async () => {
       /**
        * **Validates: Requirements 3.1**
        * 
-       * For any created Valentine, the generated Valentine link should match 
-       * the format /v/{valentine_id} where valentine_id is a valid UUID.
+       * For any created Valentine, the generated receiver link should match 
+       * the format /v/{receiver_token} where receiver_token is a valid UUID.
        */
-      
+
       await fc.assert(
         fc.asyncProperty(
           fc.record({
@@ -210,53 +167,41 @@ describe('ValentineService - Property-Based Tests', () => {
             // Set up mock for successful creation
             createMockSupabaseSuccess();
 
-            // Mock crypto.randomUUID to return real UUIDs
-            const originalRandomUUID = crypto.randomUUID.bind(crypto);
-            vi.spyOn(crypto, 'randomUUID').mockImplementation(() => {
-              return originalRandomUUID();
-            });
-
             // Create Valentine
             const result = await createValentine(
               valentineRequest.senderName,
               valentineRequest.receiverName
             );
 
-            // Property 1: URL should start with base URL + /v/
-            expect(result.public_url).toMatch(/^http:\/\/localhost:3000\/v\//);
+            // Property: receiver_url should start with base URL + /v/
+            expect(result.receiver_url).toMatch(/^http:\/\/localhost:3000\/v\//);
 
-            // Property 2: Extract the valentine_id from URL
-            const urlMatch = result.public_url.match(/\/v\/(.+)$/);
+            // Extract the receiver_token from URL
+            const urlMatch = result.receiver_url.match(/\/v\/(.+)$/);
             expect(urlMatch).not.toBeNull();
-            
+
             if (urlMatch) {
-              const valentineIdFromUrl = urlMatch[1];
-              
-              // Property 3: The valentine_id in URL should be a valid UUID
-              expect(valentineIdFromUrl).toMatch(UUID_REGEX);
-              
-              // Property 4: The valentine_id in URL should match the returned valentine_id
-              expect(valentineIdFromUrl).toBe(result.valentine_id);
-              
-              // Property 5: The valentine_id should also be a valid UUID
-              expect(result.valentine_id).toMatch(UUID_REGEX);
+              const receiverTokenFromUrl = urlMatch[1];
+
+              // The receiver_token in URL should be a valid UUID
+              expect(receiverTokenFromUrl).toMatch(UUID_REGEX);
             }
           }
         ),
         { numRuns: 25 }
       );
-    }, 30000); // Increase timeout to 30 seconds
+    }, 30000);
   });
 
-  describe('Property 6: Result URL format consistency', () => {
-    it('should generate result links matching /r/{result_token} format with valid UUID', async () => {
+  describe('Property 6: Sender URL format consistency', () => {
+    it('should generate sender result links matching /r/{sender_token} format with valid UUID', async () => {
       /**
        * **Validates: Requirements 3.2**
        * 
-       * For any created Valentine, the generated result link should match 
-       * the format /r/{result_token} where result_token is a valid UUID.
+       * For any created Valentine, the generated sender result link should match 
+       * the format /r/{sender_token} where sender_token is a valid UUID.
        */
-      
+
       await fc.assert(
         fc.asyncProperty(
           fc.record({
@@ -267,51 +212,43 @@ describe('ValentineService - Property-Based Tests', () => {
             // Set up mock for successful creation
             createMockSupabaseSuccess();
 
-            // Mock crypto.randomUUID to return real UUIDs
-            const originalRandomUUID = crypto.randomUUID.bind(crypto);
-            vi.spyOn(crypto, 'randomUUID').mockImplementation(() => {
-              return originalRandomUUID();
-            });
-
             // Create Valentine
             const result = await createValentine(
               valentineRequest.senderName,
               valentineRequest.receiverName
             );
 
-            // Property 1: URL should start with base URL + /r/
-            expect(result.result_url).toMatch(/^http:\/\/localhost:3000\/r\//);
+            // Property: sender_url should start with base URL + /r/
+            expect(result.sender_url).toMatch(/^http:\/\/localhost:3000\/r\//);
 
-            // Property 2: Extract the result_token from URL
-            const urlMatch = result.result_url.match(/\/r\/(.+)$/);
+            // Extract the sender_token from URL
+            const urlMatch = result.sender_url.match(/\/r\/(.+)$/);
             expect(urlMatch).not.toBeNull();
-            
+
             if (urlMatch) {
-              const resultTokenFromUrl = urlMatch[1];
-              
-              // Property 3: The result_token in URL should be a valid UUID
-              expect(resultTokenFromUrl).toMatch(UUID_REGEX);
+              const senderTokenFromUrl = urlMatch[1];
+
+              // The sender_token in URL should be a valid UUID
+              expect(senderTokenFromUrl).toMatch(UUID_REGEX);
             }
           }
         ),
         { numRuns: 25 }
       );
-    }, 30000); // Increase timeout to 30 seconds
+    }, 30000);
   });
 
-  describe('Property 7: One-to-one Valentine-token relationship', () => {
-    it('should associate exactly one result token with each Valentine instance', async () => {
+  describe('Property 7: Dual-token separation', () => {
+    it('should generate different sender_token and receiver_token for each Valentine', async () => {
       /**
        * **Validates: Requirements 3.5**
        * 
-       * For any created Valentine instance, exactly one result token should be 
-       * associated with it, and that token should not be associated with any 
-       * other Valentine.
+       * For any created Valentine instance, the sender_token and receiver_token
+       * should be different values, and both should differ from the valentine_id.
        */
-      
+
       await fc.assert(
         fc.asyncProperty(
-          // Generate an array of 5-15 Valentine creation requests
           fc.array(
             fc.record({
               senderName: fc.option(nonWhitespaceString({ minLength: 1, maxLength: 50 }), { nil: null }),
@@ -323,67 +260,43 @@ describe('ValentineService - Property-Based Tests', () => {
             // Set up mock for successful creation
             const { mockInsert } = createMockSupabaseSuccess();
 
-            // Mock crypto.randomUUID to return real UUIDs
-            const originalRandomUUID = crypto.randomUUID.bind(crypto);
-            vi.spyOn(crypto, 'randomUUID').mockImplementation(() => {
-              return originalRandomUUID();
-            });
-
             // Create all Valentines
             const results = await Promise.all(
-              valentineRequests.map(req => 
+              valentineRequests.map(req =>
                 createValentine(req.senderName, req.receiverName)
               )
             );
 
-            // Extract valentine IDs and result tokens
+            // Extract tokens from URLs
+            const senderTokens = results.map(r => r.sender_url.match(/\/r\/(.+)$/)![1]);
+            const receiverTokens = results.map(r => r.receiver_url.match(/\/v\/(.+)$/)![1]);
             const valentineIds = results.map(r => r.valentine_id);
-            const resultTokens = results.map(r => {
-              const match = r.result_url.match(/\/r\/(.+)$/);
-              return match ? match[1] : '';
-            });
 
-            // Property 1: Each Valentine should have exactly one result token
-            expect(valentineIds.length).toBe(resultTokens.length);
+            // Property 1: Each Valentine should have different sender and receiver tokens
+            for (let i = 0; i < results.length; i++) {
+              expect(senderTokens[i]).not.toBe(receiverTokens[i]);
+              expect(senderTokens[i]).not.toBe(valentineIds[i]);
+              expect(receiverTokens[i]).not.toBe(valentineIds[i]);
+            }
 
-            // Property 2: All result tokens should be unique (no token shared between Valentines)
-            const uniqueTokens = new Set(resultTokens);
-            expect(uniqueTokens.size).toBe(resultTokens.length);
+            // Property 2: All sender tokens should be unique
+            expect(new Set(senderTokens).size).toBe(senderTokens.length);
 
-            // Property 3: Verify the database inserts maintain the one-to-one relationship
-            // Check that result_tokens table was called with correct valentine_id associations
-            const tokenInsertCalls = mockInsert.mock.calls.filter(
-              call => call[0].token !== undefined
-            );
+            // Property 3: All receiver tokens should be unique
+            expect(new Set(receiverTokens).size).toBe(receiverTokens.length);
 
-            expect(tokenInsertCalls.length).toBe(valentineIds.length);
-
-            // Property 4: Each token insert should reference a unique valentine_id
-            const tokenToValentineMap = new Map<string, string>();
-            tokenInsertCalls.forEach(call => {
-              const token = call[0].token;
-              const valentineId = call[0].valentine_id;
-              
-              // Ensure this token hasn't been associated with another Valentine
-              expect(tokenToValentineMap.has(token)).toBe(false);
-              
-              tokenToValentineMap.set(token, valentineId);
-            });
-
-            // Property 5: Each valentine_id should appear exactly once in token associations
-            const valentineIdCounts = new Map<string, number>();
-            tokenInsertCalls.forEach(call => {
-              const valentineId = call[0].valentine_id;
-              valentineIdCounts.set(valentineId, (valentineIdCounts.get(valentineId) || 0) + 1);
-            });
-
-            valentineIds.forEach(id => {
-              expect(valentineIdCounts.get(id)).toBe(1);
+            // Property 4: Verify the database insert includes both tokens
+            const insertCalls = mockInsert.mock.calls;
+            insertCalls.forEach(call => {
+              const data = call[0];
+              if (data.sender_token && data.receiver_token) {
+                expect(data.sender_token).not.toBe(data.receiver_token);
+              }
             });
           }
         ),
         { numRuns: 25 }
       );
-    }, 30000); // Increase timeout to 30 seconds
+    }, 30000);
   });
 });

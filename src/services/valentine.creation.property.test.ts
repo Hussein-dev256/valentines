@@ -3,6 +3,7 @@
  * Feature: will-you-be-my-valentine
  * 
  * Tests Properties 3-7 from the design document
+ * Updated for dual-token architecture (sender_token + receiver_token)
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
@@ -19,7 +20,7 @@ vi.mock('./api.service', () => ({
   },
   withRetry: vi.fn((fn) => fn()),
   handleSupabaseError: vi.fn(),
-  ApiError: class extends Error {},
+  ApiError: class extends Error { },
 }));
 
 describe('Valentine Creation Property Tests', () => {
@@ -55,11 +56,11 @@ describe('Valentine Creation Property Tests', () => {
   });
 
   /**
-   * Property 4: Result token uniqueness
-   * For any set of created Valentines, all result_token values should be globally unique
+   * Property 4: Sender token uniqueness
+   * For any set of created Valentines, all sender_token values should be globally unique
    * **Validates: Requirements 2.6, 3.4**
    */
-  it('Property 4: Result tokens are globally unique', async () => {
+  it('Property 4: Sender tokens are globally unique', async () => {
     await fc.assert(
       fc.asyncProperty(
         fc.array(fc.tuple(fc.string({ minLength: 1 }).filter(s => s.trim().length > 0), fc.option(fc.string().filter(s => s.trim().length > 0), { nil: null })), { minLength: 2, maxLength: 10 }),
@@ -70,8 +71,8 @@ describe('Valentine Creation Property Tests', () => {
             )
           );
 
-          // Extract tokens from result URLs
-          const tokens = results.map(r => r.result_url.split('/r/')[1]);
+          // Extract sender tokens from sender URLs
+          const tokens = results.map(r => r.sender_url.split('/r/')[1]);
           const uniqueTokens = new Set(tokens);
 
           // All tokens should be unique
@@ -83,11 +84,11 @@ describe('Valentine Creation Property Tests', () => {
   });
 
   /**
-   * Property 5: Valentine URL format consistency
-   * For any created Valentine, the generated Valentine link should match the format /v/{valentine_id}
+   * Property 5: Receiver URL format consistency
+   * For any created Valentine, the receiver link should match the format /v/{receiver_token}
    * **Validates: Requirements 3.1**
    */
-  it('Property 5: Valentine URLs follow consistent format', async () => {
+  it('Property 5: Receiver URLs follow consistent format', async () => {
     await fc.assert(
       fc.asyncProperty(
         fc.string({ minLength: 1 }).filter(s => s.trim().length > 0),
@@ -95,13 +96,13 @@ describe('Valentine Creation Property Tests', () => {
         async (receiverName, senderName) => {
           const result = await createValentine(senderName, receiverName);
 
-          // URL should match format
+          // URL should match format with UUID token
           const urlPattern = /^https?:\/\/.+\/v\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-          expect(result.public_url).toMatch(urlPattern);
+          expect(result.receiver_url).toMatch(urlPattern);
 
-          // Valentine ID should be extractable from URL
-          const extractedId = result.public_url.split('/v/')[1];
-          expect(extractedId).toBe(result.valentine_id);
+          // Token should be extractable from URL
+          const extractedToken = result.receiver_url.split('/v/')[1];
+          expect(extractedToken).toBeTruthy();
         }
       ),
       { numRuns: 100 }
@@ -109,11 +110,11 @@ describe('Valentine Creation Property Tests', () => {
   });
 
   /**
-   * Property 6: Result URL format consistency
-   * For any created Valentine, the generated result link should match the format /r/{result_token}
+   * Property 6: Sender URL format consistency
+   * For any created Valentine, the sender result link should match the format /r/{sender_token}
    * **Validates: Requirements 3.2**
    */
-  it('Property 6: Result URLs follow consistent format', async () => {
+  it('Property 6: Sender URLs follow consistent format', async () => {
     await fc.assert(
       fc.asyncProperty(
         fc.string({ minLength: 1 }).filter(s => s.trim().length > 0),
@@ -121,12 +122,12 @@ describe('Valentine Creation Property Tests', () => {
         async (receiverName, senderName) => {
           const result = await createValentine(senderName, receiverName);
 
-          // URL should match format
+          // URL should match format with UUID token
           const urlPattern = /^https?:\/\/.+\/r\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-          expect(result.result_url).toMatch(urlPattern);
+          expect(result.sender_url).toMatch(urlPattern);
 
           // Token should be extractable from URL
-          const extractedToken = result.result_url.split('/r/')[1];
+          const extractedToken = result.sender_url.split('/r/')[1];
           expect(extractedToken).toBeTruthy();
           expect(extractedToken).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
         }
@@ -136,11 +137,11 @@ describe('Valentine Creation Property Tests', () => {
   });
 
   /**
-   * Property 7: One-to-one Valentine-token relationship
-   * For any created Valentine instance, exactly one result token should be associated with it
+   * Property 7: Dual-token separation
+   * For any created Valentine, sender_token and receiver_token should be different
    * **Validates: Requirements 3.5**
    */
-  it('Property 7: One-to-one Valentine-token relationship', async () => {
+  it('Property 7: Sender and receiver tokens are different', async () => {
     await fc.assert(
       fc.asyncProperty(
         fc.string({ minLength: 1 }).filter(s => s.trim().length > 0),
@@ -148,13 +149,12 @@ describe('Valentine Creation Property Tests', () => {
         async (receiverName, senderName) => {
           const result = await createValentine(senderName, receiverName);
 
-          // Each Valentine should have exactly one result URL
-          expect(result.result_url).toBeTruthy();
-          
-          // Valentine ID and result token should be different
-          const valentineId = result.valentine_id;
-          const resultToken = result.result_url.split('/r/')[1];
-          expect(valentineId).not.toBe(resultToken);
+          // Sender URL and receiver URL should use different tokens
+          const senderToken = result.sender_url.split('/r/')[1];
+          const receiverToken = result.receiver_url.split('/v/')[1];
+          expect(senderToken).not.toBe(receiverToken);
+          expect(senderToken).not.toBe(result.valentine_id);
+          expect(receiverToken).not.toBe(result.valentine_id);
         }
       ),
       { numRuns: 100 }

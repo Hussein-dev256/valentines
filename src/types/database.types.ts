@@ -10,7 +10,9 @@ export interface Valentine {
   sender_name: string | null;
   receiver_name: string;
   status: ValentineStatus;
-  sender_id: string | null; // UUID - anonymous sender identifier
+  sender_id: string | null; // UUID - anonymous sender identifier (legacy)
+  sender_token: string; // UUID - token for sender results URL
+  receiver_token: string; // UUID - token for receiver answering URL
   created_at: string; // ISO timestamp
   answered_at: string | null; // ISO timestamp
 }
@@ -40,15 +42,24 @@ export interface CreateValentineRequest {
 
 export interface CreateValentineResponse {
   valentine_id: string;
-  public_url: string;
-  result_url: string;
+  receiver_url: string; // URL to share with receiver (contains receiver_token)
+  sender_url: string; // URL for sender to check results (contains sender_token)
 }
 
-export interface GetValentineResponse {
+export interface GetValentineByReceiverTokenResponse {
+  valentine_id: string;
   sender_name: string | null;
   receiver_name: string;
   status: ValentineStatus;
-  sender_id: string | null; // UUID - for sender validation
+}
+
+export interface GetValentineBySenderTokenResponse {
+  valentine_id: string;
+  sender_name: string | null;
+  receiver_name: string;
+  status: ValentineStatus;
+  created_at: string;
+  answered_at: string | null;
 }
 
 export interface SubmitAnswerRequest {
@@ -57,13 +68,6 @@ export interface SubmitAnswerRequest {
 
 export interface SubmitAnswerResponse {
   success: boolean;
-}
-
-export interface GetResultResponse {
-  status: ValentineStatus;
-  created_at: string;
-  answered_at: string | null;
-  sender_id: string | null; // UUID - for sender validation
 }
 
 export interface TrackEventRequest {

@@ -26,13 +26,11 @@ export default function CreateValentinePage() {
             return;
         }
 
-        // Validate receiver name length
         if (receiverName.trim().length > MAX_NAME_LENGTH) {
             setError(`Receiver name must be ${MAX_NAME_LENGTH} characters or less`);
             return;
         }
 
-        // Validate sender name length if provided
         if (senderName && senderName.trim().length > MAX_NAME_LENGTH) {
             setError(`Sender name must be ${MAX_NAME_LENGTH} characters or less`);
             return;
@@ -46,20 +44,23 @@ export default function CreateValentinePage() {
                 receiverName.trim()
             );
 
-            // Store result token for later access
+            // Extract sender_token from sender_url for localStorage storage
+            const senderToken = result.sender_url.split('/r/')[1];
+
+            // Store result token for "My Valentines" page (convenience, not security)
             storeResultToken(
+                senderToken,
                 result.valentine_id,
-                result.result_url.split('/r/')[1],
                 receiverName.trim()
             );
 
             trackEvent(EventTypes.VALENTINE_CREATED, result.valentine_id);
 
-            // Navigate to prompt page
+            // Navigate to prompt page with new URL structure
             navigate(`/created/${result.valentine_id}`, {
                 state: {
-                    publicUrl: result.public_url,
-                    resultUrl: result.result_url,
+                    receiverUrl: result.receiver_url,
+                    senderUrl: result.sender_url,
                     receiverName: receiverName.trim(),
                 },
             });
@@ -120,7 +121,7 @@ export default function CreateValentinePage() {
                                     type="submit"
                                     disabled={loading}
                                     className="btn-primary w-full"
-                                    style={{ 
+                                    style={{
                                         opacity: loading ? 0.7 : 1,
                                         cursor: loading ? 'not-allowed' : 'pointer'
                                     }}

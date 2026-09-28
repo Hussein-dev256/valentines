@@ -3,11 +3,12 @@
  * Feature: will-you-be-my-valentine
  * 
  * Tests Properties 14-16 from the design document
+ * Updated for dual-token architecture (uses receiver_token for answer submission)
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import * as fc from 'fast-check';
-import { submitAnswer } from './valentine.service';
+import { submitAnswerByReceiverToken } from './valentine.service';
 
 // Mock Supabase
 vi.mock('./api.service', () => ({
@@ -16,7 +17,7 @@ vi.mock('./api.service', () => ({
       select: vi.fn(() => ({
         eq: vi.fn(() => ({
           single: vi.fn(() => ({
-            data: { status: 'pending' },
+            data: { id: 'mock-id', status: 'pending' },
             error: null,
           })),
         })),
@@ -30,7 +31,7 @@ vi.mock('./api.service', () => ({
   },
   withRetry: vi.fn((fn) => fn()),
   handleSupabaseError: vi.fn(),
-  ApiError: class extends Error {},
+  ApiError: class extends Error { },
 }));
 
 describe('Answer Submission Property Tests', () => {
@@ -48,8 +49,8 @@ describe('Answer Submission Property Tests', () => {
     await fc.assert(
       fc.asyncProperty(
         fc.uuid(),
-        async (valentineId) => {
-          const result = await submitAnswer(valentineId, 'yes');
+        async (receiverToken) => {
+          const result = await submitAnswerByReceiverToken(receiverToken, 'yes');
 
           // Should return success
           expect(result.success).toBe(true);
@@ -69,8 +70,8 @@ describe('Answer Submission Property Tests', () => {
     await fc.assert(
       fc.asyncProperty(
         fc.uuid(),
-        async (valentineId) => {
-          const result = await submitAnswer(valentineId, 'no');
+        async (receiverToken) => {
+          const result = await submitAnswerByReceiverToken(receiverToken, 'no');
 
           // Should return success
           expect(result.success).toBe(true);
@@ -91,13 +92,13 @@ describe('Answer Submission Property Tests', () => {
       fc.asyncProperty(
         fc.uuid(),
         fc.constantFrom('yes', 'no'),
-        async (valentineId, answer) => {
+        async (receiverToken, answer) => {
           // First submission
-          const result1 = await submitAnswer(valentineId, answer);
+          const result1 = await submitAnswerByReceiverToken(receiverToken, answer);
           expect(result1.success).toBe(true);
 
           // Second submission (should be idempotent)
-          const result2 = await submitAnswer(valentineId, answer);
+          const result2 = await submitAnswerByReceiverToken(receiverToken, answer);
           expect(result2.success).toBe(true);
 
           // Both should succeed without error

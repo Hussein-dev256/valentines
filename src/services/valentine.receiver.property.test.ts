@@ -3,14 +3,21 @@
  * Feature: will-you-be-my-valentine
  * 
  * Tests Properties 1, 2, 9 from the design document
+ * Updated for dual-token architecture
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import * as fc from 'fast-check';
-import { createValentine, getValentine } from './valentine.service';
+import { createValentine, getValentineByReceiverToken } from './valentine.service';
 
 // In-memory database for testing
-const valentinesDb = new Map<string, { sender_name: string | null; receiver_name: string; status: string }>();
+const valentinesDb = new Map<string, { sender_name: string | null; receiver_name: string; status: string; receiver_token: string }>();
+
+// Mock senderIdentity
+vi.mock('../utils/senderIdentity', () => ({
+  generateSenderId: vi.fn(() => 'mock-sender-id'),
+  storeSenderMapping: vi.fn(),
+}));
 
 // Mock Supabase
 vi.mock('./api.service', () => ({
@@ -23,16 +30,25 @@ vi.mock('./api.service', () => ({
               sender_name: data.sender_name,
               receiver_name: data.receiver_name,
               status: data.status,
+              receiver_token: data.receiver_token,
             });
             return { error: null };
           }),
           select: vi.fn(() => ({
             eq: vi.fn((_field: string, value: string) => ({
               single: vi.fn(() => {
-                const data = valentinesDb.get(value);
+                // Look up by receiver_token
+                for (const [, v] of valentinesDb) {
+                  if (v.receiver_token === value) {
+                    return {
+                      data: { id: 'mock-id', ...v },
+                      error: null,
+                    };
+                  }
+                }
                 return {
-                  data: data || null,
-                  error: data ? null : { message: 'Not found' },
+                  data: null,
+                  error: { message: 'Not found' },
                 };
               }),
             })),
@@ -49,7 +65,7 @@ vi.mock('./api.service', () => ({
   },
   withRetry: vi.fn((fn) => fn()),
   handleSupabaseError: vi.fn(),
-  ApiError: class extends Error {},
+  ApiError: class extends Error { },
 }));
 
 describe('Receiver Page Property Tests', () => {
@@ -71,10 +87,10 @@ describe('Receiver Page Property Tests', () => {
         async (receiverName) => {
           const result = await createValentine(null, receiverName);
 
-          // Should successfully create Valentine
+          // Should successfully create Valentine with both URLs
           expect(result.valentine_id).toBeTruthy();
-          expect(result.public_url).toBeTruthy();
-          expect(result.result_url).toBeTruthy();
+          expect(result.receiver_url).toBeTruthy();
+          expect(result.sender_url).toBeTruthy();
         }
       ),
       { numRuns: 100 }
@@ -94,7 +110,8 @@ describe('Receiver Page Property Tests', () => {
         fc.string({ minLength: 1 }).filter(s => s.trim().length > 0),
         async (senderName, receiverName) => {
           const created = await createValentine(senderName, receiverName);
-          const valentine = await getValentine(created.valentine_id);
+          const receiverToken = created.receiver_url.split('/v/')[1];
+          const valentine = await getValentineByReceiverToken(receiverToken);
 
           // Sender name should be present (trimmed)
           expect(valentine.sender_name).toBe(senderName.trim());
@@ -117,7 +134,8 @@ describe('Receiver Page Property Tests', () => {
         fc.option(fc.string({ minLength: 1 }).filter(s => s.trim().length > 0), { nil: null }),
         async (receiverName, senderName) => {
           const created = await createValentine(senderName, receiverName);
-          const valentine = await getValentine(created.valentine_id);
+          const receiverToken = created.receiver_url.split('/v/')[1];
+          const valentine = await getValentineByReceiverToken(receiverToken);
 
           // Receiver name should be present (trimmed)
           expect(valentine.receiver_name).toBe(receiverName.trim());

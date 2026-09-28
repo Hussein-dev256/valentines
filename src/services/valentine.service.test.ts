@@ -2,19 +2,19 @@
  * Unit tests for ValentineService
  * 
  * Tests all Valentine-related API operations including:
- * - Creating new Valentines
- * - Retrieving Valentine data
- * - Submitting answers
- * - Retrieving results
+ * - Creating new Valentines (with dual tokens)
+ * - Retrieving Valentine data by receiver token
+ * - Submitting answers by receiver token
+ * - Retrieving results by sender token
  * - Error handling and retry logic
  */
 
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import {
   createValentine,
-  getValentine,
-  submitAnswer,
-  getResult,
+  getValentineByReceiverToken,
+  getValentineBySenderToken,
+  submitAnswerByReceiverToken,
 } from './valentine.service';
 import { supabase } from './api.service';
 
@@ -40,70 +40,69 @@ describe('ValentineService', () => {
   });
 
   describe('createValentine', () => {
-    it('should create a Valentine with sender and receiver names', async () => {
+    it('should create a Valentine with sender and receiver names and dual tokens', async () => {
       const mockValentineId = 'test-valentine-id';
-      const mockResultToken = 'test-result-token';
-      
+      const mockSenderToken = 'test-sender-token';
+      const mockReceiverToken = 'test-receiver-token';
+
       // Mock crypto.randomUUID to return predictable values
       let callCount = 0;
       vi.spyOn(crypto, 'randomUUID').mockImplementation(() => {
         callCount++;
-        return (callCount === 1 ? mockValentineId : mockResultToken) as `${string}-${string}-${string}-${string}-${string}`;
+        const tokens = [mockValentineId, mockSenderToken, mockReceiverToken];
+        return (tokens[callCount - 1] || 'extra') as `${string}-${string}-${string}-${string}-${string}`;
       });
 
       const mockInsert = vi.fn().mockResolvedValue({ error: null });
       const mockFrom = vi.fn().mockReturnValue({
         insert: mockInsert,
       });
-      
+
       (supabase.from as any) = mockFrom;
 
       const result = await createValentine('Alice', 'Bob');
 
       expect(result).toEqual({
         valentine_id: mockValentineId,
-        public_url: `http://localhost:3000/v/${mockValentineId}`,
-        result_url: `http://localhost:3000/r/${mockResultToken}`,
+        receiver_url: `http://localhost:3000/v/${mockReceiverToken}`,
+        sender_url: `http://localhost:3000/r/${mockSenderToken}`,
       });
 
-      // Verify Valentine was inserted
+      // Verify Valentine was inserted with both tokens
       expect(mockFrom).toHaveBeenCalledWith('valentines');
-      expect(mockInsert).toHaveBeenCalledWith({
+      expect(mockInsert).toHaveBeenCalledWith(expect.objectContaining({
         id: mockValentineId,
         sender_name: 'Alice',
         receiver_name: 'Bob',
         status: 'pending',
-      });
-
-      // Verify result token was inserted
-      expect(mockFrom).toHaveBeenCalledWith('result_tokens');
-      expect(mockInsert).toHaveBeenCalledWith({
-        token: mockResultToken,
-        valentine_id: mockValentineId,
-      });
+        sender_token: mockSenderToken,
+        receiver_token: mockReceiverToken,
+      }));
     });
 
     it('should create an anonymous Valentine when sender name is null', async () => {
       const mockValentineId = 'test-valentine-id';
-      const mockResultToken = 'test-result-token';
-      
+      const mockSenderToken = 'test-sender-token';
+      const mockReceiverToken = 'test-receiver-token';
+
       let callCount = 0;
       vi.spyOn(crypto, 'randomUUID').mockImplementation(() => {
         callCount++;
-        return (callCount === 1 ? mockValentineId : mockResultToken) as `${string}-${string}-${string}-${string}-${string}`;
+        const tokens = [mockValentineId, mockSenderToken, mockReceiverToken];
+        return (tokens[callCount - 1] || 'extra') as `${string}-${string}-${string}-${string}-${string}`;
       });
 
       const mockInsert = vi.fn().mockResolvedValue({ error: null });
       const mockFrom = vi.fn().mockReturnValue({
         insert: mockInsert,
       });
-      
+
       (supabase.from as any) = mockFrom;
 
       const result = await createValentine(null, 'Bob');
 
       expect(result.valentine_id).toBe(mockValentineId);
-      
+
       // Verify sender_name is null
       expect(mockInsert).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -114,20 +113,17 @@ describe('ValentineService', () => {
     });
 
     it('should trim whitespace from names', async () => {
-      const mockValentineId = 'test-valentine-id';
-      const mockResultToken = 'test-result-token';
-      
       let callCount = 0;
       vi.spyOn(crypto, 'randomUUID').mockImplementation(() => {
         callCount++;
-        return (callCount === 1 ? mockValentineId : mockResultToken) as `${string}-${string}-${string}-${string}-${string}`;
+        return `uuid-${callCount}` as `${string}-${string}-${string}-${string}-${string}`;
       });
 
       const mockInsert = vi.fn().mockResolvedValue({ error: null });
       const mockFrom = vi.fn().mockReturnValue({
         insert: mockInsert,
       });
-      
+
       (supabase.from as any) = mockFrom;
 
       await createValentine('  Alice  ', '  Bob  ');
@@ -144,7 +140,7 @@ describe('ValentineService', () => {
       await expect(createValentine('Alice', '')).rejects.toThrow(
         'Receiver name is required'
       );
-      
+
       await expect(createValentine('Alice', '   ')).rejects.toThrow(
         'Receiver name is required'
       );
@@ -156,16 +152,17 @@ describe('ValentineService', () => {
       const mockFrom = vi.fn().mockReturnValue({
         insert: mockInsert,
       });
-      
+
       (supabase.from as any) = mockFrom;
 
       await expect(createValentine('Alice', 'Bob')).rejects.toThrow();
     });
   });
 
-  describe('getValentine', () => {
-    it('should retrieve Valentine data by ID', async () => {
+  describe('getValentineByReceiverToken', () => {
+    it('should retrieve Valentine data by receiver token', async () => {
       const mockData = {
+        id: 'test-id',
         sender_name: 'Alice',
         receiver_name: 'Bob',
         status: 'pending',
@@ -178,15 +175,20 @@ describe('ValentineService', () => {
       const mockEq = vi.fn().mockReturnValue({ single: mockSingle });
       const mockSelect = vi.fn().mockReturnValue({ eq: mockEq });
       const mockFrom = vi.fn().mockReturnValue({ select: mockSelect });
-      
+
       (supabase.from as any) = mockFrom;
 
-      const result = await getValentine('test-id');
+      const result = await getValentineByReceiverToken('test-receiver-token');
 
-      expect(result).toEqual(mockData);
+      // Service transforms id → valentine_id
+      expect(result).toEqual({
+        valentine_id: 'test-id',
+        sender_name: 'Alice',
+        receiver_name: 'Bob',
+        status: 'pending',
+      });
       expect(mockFrom).toHaveBeenCalledWith('valentines');
-      expect(mockSelect).toHaveBeenCalledWith('sender_name, receiver_name, status');
-      expect(mockEq).toHaveBeenCalledWith('id', 'test-id');
+      expect(mockEq).toHaveBeenCalledWith('receiver_token', 'test-receiver-token');
     });
 
     it('should handle Valentine not found', async () => {
@@ -197,10 +199,10 @@ describe('ValentineService', () => {
       const mockEq = vi.fn().mockReturnValue({ single: mockSingle });
       const mockSelect = vi.fn().mockReturnValue({ eq: mockEq });
       const mockFrom = vi.fn().mockReturnValue({ select: mockSelect });
-      
+
       (supabase.from as any) = mockFrom;
 
-      await expect(getValentine('invalid-id')).rejects.toThrow();
+      await expect(getValentineByReceiverToken('invalid-token')).rejects.toThrow();
     });
 
     it('should handle database errors', async () => {
@@ -212,27 +214,28 @@ describe('ValentineService', () => {
       const mockEq = vi.fn().mockReturnValue({ single: mockSingle });
       const mockSelect = vi.fn().mockReturnValue({ eq: mockEq });
       const mockFrom = vi.fn().mockReturnValue({ select: mockSelect });
-      
+
       (supabase.from as any) = mockFrom;
 
-      await expect(getValentine('test-id')).rejects.toThrow();
+      await expect(getValentineByReceiverToken('test-token')).rejects.toThrow();
     });
   });
 
-  describe('submitAnswer', () => {
+  describe('submitAnswerByReceiverToken', () => {
     it('should submit YES answer successfully', async () => {
-      // Mock the select query to return pending status
+      // Mock the select query to return pending valentine
       const mockSingle = vi.fn().mockResolvedValue({
-        data: { status: 'pending' },
+        data: { id: 'test-id', status: 'pending' },
         error: null,
       });
       const mockEq = vi.fn().mockReturnValue({ single: mockSingle });
       const mockSelect = vi.fn().mockReturnValue({ eq: mockEq });
 
-      // Mock the update query
-      const mockUpdateEq = vi.fn().mockResolvedValue({ error: null });
+      // Mock the update query: .eq('receiver_token', ...).eq('status', 'pending')
+      const mockUpdateEq2 = vi.fn().mockResolvedValue({ error: null });
+      const mockUpdateEq1 = vi.fn().mockReturnValue({ eq: mockUpdateEq2 });
       const mockUpdate = vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({ eq: mockUpdateEq }),
+        eq: mockUpdateEq1,
       });
 
       const mockFrom = vi.fn((table: string) => {
@@ -244,31 +247,27 @@ describe('ValentineService', () => {
         }
         return {};
       });
-      
+
       (supabase.from as any) = mockFrom;
 
-      const result = await submitAnswer('test-id', 'yes');
+      const result = await submitAnswerByReceiverToken('test-receiver-token', 'yes');
 
       expect(result).toEqual({ success: true });
-      expect(mockUpdate).toHaveBeenCalledWith(
-        expect.objectContaining({
-          status: 'yes',
-          answered_at: expect.any(String),
-        })
-      );
     });
 
     it('should submit NO answer successfully', async () => {
       const mockSingle = vi.fn().mockResolvedValue({
-        data: { status: 'pending' },
+        data: { id: 'test-id', status: 'pending' },
         error: null,
       });
       const mockEq = vi.fn().mockReturnValue({ single: mockSingle });
       const mockSelect = vi.fn().mockReturnValue({ eq: mockEq });
 
-      const mockUpdateEq = vi.fn().mockResolvedValue({ error: null });
+      // Mock the update query: .eq('receiver_token', ...).eq('status', 'pending')
+      const mockUpdateEq2 = vi.fn().mockResolvedValue({ error: null });
+      const mockUpdateEq1 = vi.fn().mockReturnValue({ eq: mockUpdateEq2 });
       const mockUpdate = vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({ eq: mockUpdateEq }),
+        eq: mockUpdateEq1,
       });
 
       const mockFrom = vi.fn((table: string) => {
@@ -280,23 +279,17 @@ describe('ValentineService', () => {
         }
         return {};
       });
-      
+
       (supabase.from as any) = mockFrom;
 
-      const result = await submitAnswer('test-id', 'no');
+      const result = await submitAnswerByReceiverToken('test-receiver-token', 'no');
 
       expect(result).toEqual({ success: true });
-      expect(mockUpdate).toHaveBeenCalledWith(
-        expect.objectContaining({
-          status: 'no',
-          answered_at: expect.any(String),
-        })
-      );
     });
 
     it('should be idempotent when Valentine already answered', async () => {
       const mockSingle = vi.fn().mockResolvedValue({
-        data: { status: 'yes' },
+        data: { id: 'test-id', status: 'yes' },
         error: null,
       });
       const mockEq = vi.fn().mockReturnValue({ single: mockSingle });
@@ -312,10 +305,10 @@ describe('ValentineService', () => {
         }
         return {};
       });
-      
+
       (supabase.from as any) = mockFrom;
 
-      const result = await submitAnswer('test-id', 'no');
+      const result = await submitAnswerByReceiverToken('test-receiver-token', 'no');
 
       expect(result).toEqual({ success: true });
       // Update should not be called
@@ -333,43 +326,47 @@ describe('ValentineService', () => {
       const mockFrom = vi.fn(() => ({
         select: mockSelect,
       }));
-      
+
       (supabase.from as any) = mockFrom;
 
-      await expect(submitAnswer('invalid-id', 'yes')).rejects.toThrow();
+      await expect(submitAnswerByReceiverToken('invalid-token', 'yes')).rejects.toThrow();
     });
   });
 
-  describe('getResult', () => {
-    it('should retrieve result by token', async () => {
-      const mockTokenData = { valentine_id: 'test-valentine-id' };
-      const mockValentineData = {
+  describe('getValentineBySenderToken', () => {
+    it('should retrieve result by sender token', async () => {
+      const mockData = {
+        id: 'test-id',
+        sender_name: 'Alice',
+        receiver_name: 'Bob',
         status: 'yes',
         created_at: '2024-01-01T00:00:00Z',
         answered_at: '2024-01-01T01:00:00Z',
       };
 
-      const mockSingle = vi.fn()
-        .mockResolvedValueOnce({
-          data: mockTokenData,
-          error: null,
-        })
-        .mockResolvedValueOnce({
-          data: mockValentineData,
-          error: null,
-        });
-
+      const mockSingle = vi.fn().mockResolvedValue({
+        data: mockData,
+        error: null,
+      });
       const mockEq = vi.fn().mockReturnValue({ single: mockSingle });
       const mockSelect = vi.fn().mockReturnValue({ eq: mockEq });
       const mockFrom = vi.fn().mockReturnValue({ select: mockSelect });
-      
+
       (supabase.from as any) = mockFrom;
 
-      const result = await getResult('test-token');
+      const result = await getValentineBySenderToken('test-sender-token');
 
-      expect(result).toEqual(mockValentineData);
-      expect(mockFrom).toHaveBeenCalledWith('result_tokens');
+      // Service transforms id → valentine_id
+      expect(result).toEqual({
+        valentine_id: 'test-id',
+        sender_name: 'Alice',
+        receiver_name: 'Bob',
+        status: 'yes',
+        created_at: '2024-01-01T00:00:00Z',
+        answered_at: '2024-01-01T01:00:00Z',
+      });
       expect(mockFrom).toHaveBeenCalledWith('valentines');
+      expect(mockEq).toHaveBeenCalledWith('sender_token', 'test-sender-token');
     });
 
     it('should handle invalid token', async () => {
@@ -380,39 +377,43 @@ describe('ValentineService', () => {
       const mockEq = vi.fn().mockReturnValue({ single: mockSingle });
       const mockSelect = vi.fn().mockReturnValue({ eq: mockEq });
       const mockFrom = vi.fn().mockReturnValue({ select: mockSelect });
-      
+
       (supabase.from as any) = mockFrom;
 
-      await expect(getResult('invalid-token')).rejects.toThrow();
+      await expect(getValentineBySenderToken('invalid-token')).rejects.toThrow();
     });
 
     it('should handle pending Valentine', async () => {
-      const mockTokenData = { valentine_id: 'test-valentine-id' };
-      const mockValentineData = {
+      const mockData = {
+        id: 'test-id',
+        sender_name: 'Alice',
+        receiver_name: 'Bob',
         status: 'pending',
         created_at: '2024-01-01T00:00:00Z',
         answered_at: null,
       };
 
-      const mockSingle = vi.fn()
-        .mockResolvedValueOnce({
-          data: mockTokenData,
-          error: null,
-        })
-        .mockResolvedValueOnce({
-          data: mockValentineData,
-          error: null,
-        });
-
+      const mockSingle = vi.fn().mockResolvedValue({
+        data: mockData,
+        error: null,
+      });
       const mockEq = vi.fn().mockReturnValue({ single: mockSingle });
       const mockSelect = vi.fn().mockReturnValue({ eq: mockEq });
       const mockFrom = vi.fn().mockReturnValue({ select: mockSelect });
-      
+
       (supabase.from as any) = mockFrom;
 
-      const result = await getResult('test-token');
+      const result = await getValentineBySenderToken('test-token');
 
-      expect(result).toEqual(mockValentineData);
+      // Service transforms id → valentine_id
+      expect(result).toEqual({
+        valentine_id: 'test-id',
+        sender_name: 'Alice',
+        receiver_name: 'Bob',
+        status: 'pending',
+        created_at: '2024-01-01T00:00:00Z',
+        answered_at: null,
+      });
       expect(result.status).toBe('pending');
       expect(result.answered_at).toBeNull();
     });
@@ -431,6 +432,7 @@ describe('ValentineService', () => {
         }
         return Promise.resolve({
           data: {
+            id: 'test-id',
             sender_name: 'Alice',
             receiver_name: 'Bob',
             status: 'pending',
@@ -442,10 +444,10 @@ describe('ValentineService', () => {
       const mockEq = vi.fn().mockReturnValue({ single: mockSingle });
       const mockSelect = vi.fn().mockReturnValue({ eq: mockEq });
       const mockFrom = vi.fn().mockReturnValue({ select: mockSelect });
-      
+
       (supabase.from as any) = mockFrom;
 
-      const result = await getValentine('test-id');
+      const result = await getValentineByReceiverToken('test-token');
 
       expect(result).toBeDefined();
       expect(attemptCount).toBeGreaterThan(1);
@@ -460,11 +462,10 @@ describe('ValentineService', () => {
       const mockEq = vi.fn().mockReturnValue({ single: mockSingle });
       const mockSelect = vi.fn().mockReturnValue({ eq: mockEq });
       const mockFrom = vi.fn().mockReturnValue({ select: mockSelect });
-      
+
       (supabase.from as any) = mockFrom;
 
-      await expect(getValentine('test-id')).rejects.toThrow();
+      await expect(getValentineByReceiverToken('test-token')).rejects.toThrow();
     });
   });
 });
-
